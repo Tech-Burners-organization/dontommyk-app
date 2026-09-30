@@ -34,11 +34,11 @@ class _SplashPageState extends State<SplashPage> {
                 text:
                     'AI-Powered Workforce Alignment & Professional\nEffectiveness',
                 color: Colors.white,
-                fontSize: 14,
+                fontSize: 16,
                 fontWeight: FontWeight.w400,
                 maxLines: 2,
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 80),
             ],
           ),
         ),
