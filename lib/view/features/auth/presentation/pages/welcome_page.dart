@@ -18,75 +18,77 @@ class WelcomePage extends StatelessWidget {
           child: Column(
             children: [
               Expanded(
-                child: Column(
-                  children: [
-                    Image.asset('assets/image/logo.png', width: 200.w),
-                    SizedBox(height: 40.h),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.white24),
-                        borderRadius: BorderRadius.circular(30),
-                        color: Colors.white.withOpacity(0.05),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SvgPicture.asset(
-                            'assets/icon/tik.svg',
-                            width: 20,
-                            height: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: CommonText(
-                              text:
-                                  'Training course completed — welcome aboard',
-                              color: const Color(0x80FFFFFF),
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              maxLines: 2,
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      Image.asset('assets/image/logo.png', width: 200.w),
+                      SizedBox(height: 20.h),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.white24),
+                          borderRadius: BorderRadius.circular(30),
+                          color: Colors.white.withOpacity(0.05),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SvgPicture.asset(
+                              'assets/icon/tik.svg',
+                              width: 20,
+                              height: 20,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: CommonText(
+                                text:
+                                    'Training course completed — welcome aboard',
+                                color: const Color(0x80FFFFFF),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                maxLines: 2,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 40.h),
-                    const CommonText(
-                      text: 'Your alignment journey\nstarts here',
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      maxLines: 2,
-                    ),
-                    SizedBox(height: 16.h),
-                    const CommonText(
-                      text:
-                          'AlignIQ measures how well your personal values, habits, and communication style align with your organization\'s goals — and gives you a personalized roadmap to grow.',
-                      color: Color(0x80FFFFFF),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      maxLines: 5,
-                    ),
-                    SizedBox(height: 32.h),
-                    _buildFeatureTile(
-                      'assets/icon/alignment.svg',
-                      'Alignment Score',
-                      'Know exactly where you stand',
-                    ),
-                    SizedBox(height: 12.h),
-                    _buildFeatureTile(
-                      'assets/icon/aiCoatch.svg',
-                      'AI Coach',
-                      'Personalized 24/7 guidance',
-                    ),
-                    SizedBox(height: 12.h),
-                    _buildFeatureTile(
-                      'assets/icon/track.svg',
-                      'Track Growth',
-                      'See your progress over time',
-                    ),
-                  ],
+                      SizedBox(height: 20.h),
+                      const CommonText(
+                        text: 'Your alignment journey\nstarts here',
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        maxLines: 2,
+                      ),
+                      SizedBox(height: 10.h),
+                      const CommonText(
+                        text:
+                            'AlignIQ measures how well your personal values, habits, and communication style align with your organization\'s goals — and gives you a personalized roadmap to grow.',
+                        color: Color(0x80FFFFFF),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        maxLines: 5,
+                      ),
+                      SizedBox(height: 32.h),
+                      _buildFeatureTile(
+                        'assets/icon/alignment.svg',
+                        'Alignment Score',
+                        'Know exactly where you stand',
+                      ),
+                      SizedBox(height: 12.h),
+                      _buildFeatureTile(
+                        'assets/icon/aiCoatch.svg',
+                        'AI Coach',
+                        'Personalized 24/7 guidance',
+                      ),
+                      SizedBox(height: 12.h),
+                      _buildFeatureTile(
+                        'assets/icon/track.svg',
+                        'Track Growth',
+                        'See your progress over time',
+                      ),
+                    ],
+                  ),
                 ),
               ),
               CommonButton(

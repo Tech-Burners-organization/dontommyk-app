@@ -1,7 +1,7 @@
 abstract final class AppConfig {
   static const String baseUrl = String.fromEnvironment(
     'BASE_URL',
-    defaultValue: 'https://api.example.com',
+    defaultValue: 'http://13.51.80.40:5000/api/v1',
   );
 
   static const Duration connectTimeout = Duration(seconds: 20);

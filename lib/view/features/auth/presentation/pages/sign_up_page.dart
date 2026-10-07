@@ -17,6 +17,9 @@ class SignUpPage extends StatefulWidget {
 
 class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _designationController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -29,6 +32,9 @@ class _SignUpPageState extends State<SignUpPage> {
 
   @override
   void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _designationController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -37,6 +43,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
   void _submit() {
     if (_formKey.currentState?.validate() ?? false) {
+      // Data matches: firstName, lastName, designation, email, password
       Navigator.pushNamed(context, AppRoute.signUpVerification);
     }
   }
@@ -120,6 +127,58 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                     ),
                     SizedBox(height: 32.h),
+                    
+                    const CommonText(
+                      text: 'First Name',
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
+                    SizedBox(height: 8.h),
+                    _buildTextField(
+                      controller: _firstNameController,
+                      hintText: 'Enter Your First Name',
+                      prefixIcon: Icons.person_outline,
+                      keyboardType: TextInputType.name,
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.givenName],
+                      validator: (val) => Validator.emptyValidator(val, fieldName: 'First Name'),
+                    ),
+                    SizedBox(height: 20.h),
+
+                    const CommonText(
+                      text: 'Last Name',
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
+                    SizedBox(height: 8.h),
+                    _buildTextField(
+                      controller: _lastNameController,
+                      hintText: 'Enter Your Last Name',
+                      prefixIcon: Icons.person_outline,
+                      keyboardType: TextInputType.name,
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.familyName],
+                      validator: (val) => Validator.emptyValidator(val, fieldName: 'Last Name'),
+                    ),
+                    SizedBox(height: 20.h),
+
+                    const CommonText(
+                      text: 'Designation',
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
+                    SizedBox(height: 8.h),
+                    _buildTextField(
+                      controller: _designationController,
+                      hintText: 'Enter Your Designation',
+                      prefixIcon: Icons.work_outline,
+                      keyboardType: TextInputType.text,
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.jobTitle],
+                      validator: (val) => Validator.emptyValidator(val, fieldName: 'Designation'),
+                    ),
+                    SizedBox(height: 20.h),
+
                     const CommonText(
                       text: 'Email',
                       color: Colors.white,
@@ -256,3 +315,4 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 }
+

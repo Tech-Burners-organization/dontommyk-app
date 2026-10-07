@@ -1,4 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tommy/core/network/api_service.dart';
+import 'package:tommy/view/features/auth/data/datasources/auth_remote_data_source.dart';
+import 'package:tommy/view/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:tommy/view/features/auth/domain/usecases/login_usecase.dart';
+import 'package:tommy/view/features/auth/presentation/bloc/auth_bloc.dart';
+
 import 'package:tommy/view/features/ai_coach/presentation/pages/ai_coach_page.dart';
 import 'package:tommy/view/features/assessment/presentation/pages/assessment_page.dart';
 import 'package:tommy/view/features/auth/presentation/pages/create_new_password_page.dart';
@@ -57,10 +64,23 @@ abstract final class AppRoute {
         settings: settings,
         builder: (_) => const WelcomePage(),
       ),
+
       login => MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const LoginPage(),
+        builder: (context) => BlocProvider(
+          create: (context) => AuthBloc(
+            loginUseCase: LoginUseCase(
+              AuthRepositoryImpl(
+                AuthRemoteDataSourceImpl(
+                  context.read<ApiService>(),
+                ),
+              ),
+            ),
+          ),
+          child: LoginPage(),
+        ),
       ),
+
       signUp => MaterialPageRoute<void>(
         settings: settings,
         builder: (_) => const SignUpPage(),

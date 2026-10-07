@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,8 +8,28 @@ import 'package:tommy/view/component/common_text/common_text.dart';
 import 'package:tommy/view/component/common_button/common_button.dart';
 import 'package:tommy/view/component/custom_text_field/custom_text_field.dart';
 
-class LoginPage extends StatelessWidget {
-  const LoginPage({super.key});
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tommy/view/features/auth/presentation/bloc/auth_bloc.dart';
+
+class LoginPage extends StatefulWidget {
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final _emailController = TextEditingController(
+    text: kDebugMode ? "employee2@example.com" : "",
+  );
+  final _passwordController = TextEditingController(
+    text: kDebugMode ? "12345678" : "",
+  );
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +69,7 @@ class LoginPage extends StatelessWidget {
               ),
               SizedBox(height: 8.h),
               CustomTextField(
+                controller: _emailController,
                 hintText: 'Enter Your Email',
                 prefixIcon: const Icon(
                   Icons.mail_outline,
@@ -81,6 +103,7 @@ class LoginPage extends StatelessWidget {
               ),
               SizedBox(height: 8.h),
               CustomTextField(
+                controller: _passwordController,
                 hintText: '••••••••',
                 isPassword: true,
                 prefixIcon: const Icon(
@@ -144,18 +167,40 @@ class LoginPage extends StatelessWidget {
                 ],
               ),
               SizedBox(height: 40.h),
-              CommonButton(
-                titleText: 'Continue',
-                titleColor: Colors.black,
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFC77926), Color(0xFFFBE1A6)],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ),
-                onTap: () {
-                  Navigator.pushReplacementNamed(context, AppRoute.dashboard);
+
+              BlocConsumer<AuthBloc, AuthState>(
+                listener: (context, state) {
+                  if (state is AuthSuccess) {
+                    Navigator.pushReplacementNamed(context, AppRoute.dashboard);
+                  } else if (state is AuthFailure) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(state.message)));
+                  }
+                },
+                builder: (context, state) {
+                  return CommonButton(
+                    isLoading: state is AuthLoading,
+                    titleText: 'Continue',
+                    titleColor: Colors.black,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFC77926), Color(0xFFFBE1A6)],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    onTap: () {
+                      final email = _emailController.text.trim();
+                      final password = _passwordController.text;
+                      if (email.isNotEmpty && password.isNotEmpty) {
+                        context.read<AuthBloc>().add(
+                          LoginSubmitted(email: email, password: password),
+                        );
+                      }
+                    },
+                  );
                 },
               ),
+
               SizedBox(height: 20.h),
               Center(
                 child: Row(
