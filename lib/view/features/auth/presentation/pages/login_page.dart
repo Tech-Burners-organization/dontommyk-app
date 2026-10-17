@@ -8,20 +8,24 @@ import 'package:tommy/view/component/common_text/common_text.dart';
 import 'package:tommy/view/component/common_button/common_button.dart';
 import 'package:tommy/view/component/custom_text_field/custom_text_field.dart';
 
+import 'package:tommy/view/component/custom_snacbar.dart';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tommy/view/features/auth/presentation/bloc/auth_bloc.dart';
 
 class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController(
-    text: kDebugMode ? "employee2@example.com" : "",
+    text: kDebugMode ? "mirza.eee.4th@gmail.com" : "",
   );
   final _passwordController = TextEditingController(
-    text: kDebugMode ? "12345678" : "",
+    text: kDebugMode ? "Mirza123@" : "",
   );
 
   @override
@@ -171,11 +175,21 @@ class _LoginPageState extends State<LoginPage> {
               BlocConsumer<AuthBloc, AuthState>(
                 listener: (context, state) {
                   if (state is AuthSuccess) {
-                    Navigator.pushReplacementNamed(context, AppRoute.dashboard);
-                  } else if (state is AuthFailure) {
-                    ScaffoldMessenger.of(
+                    showAppSnackBar(
                       context,
-                    ).showSnackBar(SnackBar(content: Text(state.message)));
+                      message: 'User logged in successfully.',
+                      isSuccess: true,
+                    );
+                    Navigator.pushReplacementNamed(
+                      context,
+                      AppRoute.profileSetup,
+                    );
+                  } else if (state is AuthFailure) {
+                    showAppSnackBar(
+                      context,
+                      message: state.message,
+                      isSuccess: false,
+                    );
                   }
                 },
                 builder: (context, state) {
@@ -191,43 +205,28 @@ class _LoginPageState extends State<LoginPage> {
                     onTap: () {
                       final email = _emailController.text.trim();
                       final password = _passwordController.text;
-                      if (email.isNotEmpty && password.isNotEmpty) {
-                        context.read<AuthBloc>().add(
-                          LoginSubmitted(email: email, password: password),
+                      if (email.isEmpty) {
+                        showAppSnackBar(
+                          context,
+                          message: 'Please enter your email',
+                          isSuccess: false,
                         );
+                        return;
                       }
+                      if (password.isEmpty) {
+                        showAppSnackBar(
+                          context,
+                          message: 'Please enter your password',
+                          isSuccess: false,
+                        );
+                        return;
+                      }
+                      context.read<AuthBloc>().add(
+                        LoginSubmitted(email: email, password: password),
+                      );
                     },
                   );
                 },
-              ),
-
-              SizedBox(height: 20.h),
-              Center(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const CommonText(
-                      text: 'Don\'t have an account? ',
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
-                    TextButton(
-                      onPressed: () =>
-                          Navigator.pushNamed(context, AppRoute.signUp),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        minimumSize: const Size(44, 44),
-                        tapTargetSize: MaterialTapTargetSize.padded,
-                      ),
-                      child: const CommonText(
-                        text: 'Create',
-                        color: Color(0xFFD48B3B),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
               ),
               SizedBox(height: 40.h),
             ],

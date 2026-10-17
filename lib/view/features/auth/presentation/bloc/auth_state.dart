@@ -2,9 +2,9 @@ part of 'auth_bloc.dart';
 
 sealed class AuthState extends Equatable {
   const AuthState();
-  
+
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 final class AuthInitial extends AuthState {}
@@ -13,11 +13,48 @@ final class AuthLoading extends AuthState {}
 
 final class AuthSuccess extends AuthState {}
 
+final class ForgotPasswordSuccess extends AuthState {
+  final String message;
+
+  const ForgotPasswordSuccess(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+final class VerifyEmailSuccess extends AuthState {
+  final String token;
+  final String message;
+
+  const VerifyEmailSuccess({required this.token, required this.message});
+
+  @override
+  List<Object?> get props => [token, message];
+}
+
+final class ResendOtpSuccess extends AuthState {
+  final String message;
+
+  const ResendOtpSuccess(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+final class ResetPasswordSuccess extends AuthState {
+  final String message;
+
+  const ResetPasswordSuccess(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
 final class AuthFailure extends AuthState {
   final String message;
 
   const AuthFailure(this.message);
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message];
 }

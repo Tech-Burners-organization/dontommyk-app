@@ -4,11 +4,23 @@ import 'package:tommy/core/config/app_config.dart';
 import 'package:tommy/core/network/api_service.dart';
 import 'package:tommy/core/network/auth_interceptor.dart';
 import 'package:tommy/core/utils/prefs_helper.dart';
+import 'package:tommy/view/features/assessment/data/datasources/assessment_remote_data_source.dart';
+import 'package:tommy/view/features/assessment/data/repositories/assessment_repository_impl.dart';
+import 'package:tommy/view/features/assessment/domain/repositories/assessment_repository.dart';
+import 'package:tommy/view/features/auth/data/datasources/auth_remote_data_source.dart';
+import 'package:tommy/view/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:tommy/view/features/auth/domain/repositories/auth_repository.dart';
 
 class AppDependencies {
-  AppDependencies._({required this.apiService});
+  AppDependencies._({
+    required this.apiService,
+    required this.authRepository,
+    required this.assessmentRepository,
+  });
 
   final ApiService apiService;
+  final AuthRepository authRepository;
+  final AssessmentRepository assessmentRepository;
 
   factory AppDependencies.create() {
     final dio = Dio(
@@ -39,7 +51,20 @@ class AppDependencies {
       );
     }
 
-    return AppDependencies._(apiService: ApiService(dio));
+    final apiService = ApiService(dio);
+    final authRemoteDataSource = AuthRemoteDataSourceImpl(apiService);
+    final authRepository = AuthRepositoryImpl(authRemoteDataSource);
+
+    final assessmentRemoteDataSource =
+        AssessmentRemoteDataSourceImpl(apiService);
+    final assessmentRepository =
+        AssessmentRepositoryImpl(assessmentRemoteDataSource);
+
+    return AppDependencies._(
+      apiService: apiService,
+      authRepository: authRepository,
+      assessmentRepository: assessmentRepository,
+    );
   }
 }
 

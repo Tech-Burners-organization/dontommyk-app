@@ -7,7 +7,6 @@ import 'package:tommy/view/features/auth/presentation/pages/create_new_password_
 import 'package:tommy/view/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:tommy/view/features/auth/presentation/pages/login_page.dart';
 import 'package:tommy/view/features/auth/presentation/pages/profile_setup_page.dart';
-import 'package:tommy/view/features/auth/presentation/pages/sign_up_page.dart';
 import 'package:tommy/view/features/auth/presentation/pages/splash_page.dart';
 import 'package:tommy/view/features/auth/presentation/pages/verification_code_page.dart';
 import 'package:tommy/view/features/auth/presentation/pages/welcome_page.dart';
@@ -40,7 +39,6 @@ void main() {
       AppRoute.splash: SplashPage,
       AppRoute.welcome: WelcomePage,
       AppRoute.login: LoginPage,
-      AppRoute.signUp: SignUpPage,
       AppRoute.signUpVerification: VerificationCodePage,
       AppRoute.profileSetup: ProfileSetupPage,
       AppRoute.forgotPassword: ForgotPasswordPage,

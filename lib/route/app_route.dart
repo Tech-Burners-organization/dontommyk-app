@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:tommy/core/network/api_service.dart';
-import 'package:tommy/view/features/auth/data/datasources/auth_remote_data_source.dart';
-import 'package:tommy/view/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:tommy/view/features/auth/domain/repositories/auth_repository.dart';
+import 'package:tommy/view/features/auth/domain/usecases/forgot_password_usecase.dart';
 import 'package:tommy/view/features/auth/domain/usecases/login_usecase.dart';
+import 'package:tommy/view/features/auth/domain/usecases/resend_otp_usecase.dart';
+import 'package:tommy/view/features/auth/domain/usecases/reset_password_usecase.dart';
+import 'package:tommy/view/features/auth/domain/usecases/verify_email_usecase.dart';
 import 'package:tommy/view/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:tommy/view/features/assessment/domain/repositories/assessment_repository.dart';
+import 'package:tommy/view/features/assessment/domain/usecases/get_initial_assessment_usecase.dart';
+import 'package:tommy/view/features/assessment/domain/usecases/submit_initial_assessment_usecase.dart';
+import 'package:tommy/view/features/assessment/presentation/bloc/assessment_bloc.dart';
 
 import 'package:tommy/view/features/ai_coach/presentation/pages/ai_coach_page.dart';
 import 'package:tommy/view/features/assessment/presentation/pages/assessment_page.dart';
@@ -12,7 +18,6 @@ import 'package:tommy/view/features/auth/presentation/pages/create_new_password_
 import 'package:tommy/view/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:tommy/view/features/auth/presentation/pages/login_page.dart';
 import 'package:tommy/view/features/auth/presentation/pages/profile_setup_page.dart';
-import 'package:tommy/view/features/auth/presentation/pages/sign_up_page.dart';
 import 'package:tommy/view/features/auth/presentation/pages/splash_page.dart';
 import 'package:tommy/view/features/auth/presentation/pages/verification_code_page.dart';
 import 'package:tommy/view/features/auth/presentation/pages/welcome_page.dart';
@@ -54,6 +59,17 @@ abstract final class AppRoute {
   static const String termsAndConditions = '/profile/terms-and-conditions';
   static const String aboutUs = '/profile/about-us';
 
+  static AuthBloc _buildAuthBloc(BuildContext context) {
+    final repo = context.read<AuthRepository>();
+    return AuthBloc(
+      loginUseCase: LoginUseCase(repo),
+      forgotPasswordUseCase: ForgotPasswordUseCase(repo),
+      verifyEmailUseCase: VerifyEmailUseCase(repo),
+      resendOtpUseCase: ResendOtpUseCase(repo),
+      resetPasswordUseCase: ResetPasswordUseCase(repo),
+    );
+  }
+
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     return switch (settings.name) {
       splash => MaterialPageRoute<void>(
@@ -64,31 +80,25 @@ abstract final class AppRoute {
         settings: settings,
         builder: (_) => const WelcomePage(),
       ),
-
       login => MaterialPageRoute<void>(
         settings: settings,
         builder: (context) => BlocProvider(
-          create: (context) => AuthBloc(
-            loginUseCase: LoginUseCase(
-              AuthRepositoryImpl(
-                AuthRemoteDataSourceImpl(
-                  context.read<ApiService>(),
-                ),
-              ),
-            ),
-          ),
-          child: LoginPage(),
+          create: (_) => _buildAuthBloc(context),
+          child: const LoginPage(),
         ),
-      ),
-
-      signUp => MaterialPageRoute<void>(
-        settings: settings,
-        builder: (_) => const SignUpPage(),
       ),
       signUpVerification => MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) =>
-            const VerificationCodePage(purpose: VerificationPurpose.signUp),
+        builder: (context) {
+          final email = settings.arguments as String? ?? '';
+          return BlocProvider(
+            create: (_) => _buildAuthBloc(context),
+            child: VerificationCodePage(
+              purpose: VerificationPurpose.signUp,
+              email: email,
+            ),
+          );
+        },
       ),
       profileSetup => MaterialPageRoute<void>(
         settings: settings,
@@ -96,21 +106,47 @@ abstract final class AppRoute {
       ),
       forgotPassword => MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const ForgotPasswordPage(),
+        builder: (context) => BlocProvider(
+          create: (_) => _buildAuthBloc(context),
+          child: const ForgotPasswordPage(),
+        ),
       ),
       verificationCode => MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const VerificationCodePage(
-          purpose: VerificationPurpose.passwordReset,
-        ),
+        builder: (context) {
+          final email = settings.arguments as String? ?? '';
+          return BlocProvider(
+            create: (_) => _buildAuthBloc(context),
+            child: VerificationCodePage(
+              purpose: VerificationPurpose.passwordReset,
+              email: email,
+            ),
+          );
+        },
       ),
       createNewPassword => MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const CreateNewPasswordPage(),
+        builder: (context) {
+          final token = settings.arguments as String?;
+          return BlocProvider(
+            create: (_) => _buildAuthBloc(context),
+            child: CreateNewPasswordPage(token: token),
+          );
+        },
       ),
       assessment => MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const AssessmentPage(),
+        builder: (context) {
+          final repo = context.read<AssessmentRepository>();
+          return BlocProvider(
+            create: (_) => AssessmentBloc(
+              getInitialAssessmentUseCase: GetInitialAssessmentUseCase(repo),
+              submitInitialAssessmentUseCase:
+                  SubmitInitialAssessmentUseCase(repo),
+            )..add(const FetchAssessmentEvent()),
+            child: const AssessmentPage(),
+          );
+        },
       ),
       home || dashboard => MaterialPageRoute<void>(
         settings: settings,

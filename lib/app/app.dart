@@ -7,6 +7,9 @@ import 'package:tommy/core/di/app_dependencies.dart';
 import 'package:tommy/core/network/api_service.dart';
 import 'package:tommy/route/app_route.dart';
 
+import 'package:tommy/view/features/assessment/domain/repositories/assessment_repository.dart';
+import 'package:tommy/view/features/auth/domain/repositories/auth_repository.dart';
+
 class TommyApp extends StatelessWidget {
   const TommyApp({required this.dependencies, super.key});
 
@@ -17,6 +20,12 @@ class TommyApp extends StatelessWidget {
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider<ApiService>.value(value: dependencies.apiService),
+        RepositoryProvider<AuthRepository>.value(
+          value: dependencies.authRepository,
+        ),
+        RepositoryProvider<AssessmentRepository>.value(
+          value: dependencies.assessmentRepository,
+        ),
       ],
       child: BlocProvider(
         create: (_) => AppCubit(),
