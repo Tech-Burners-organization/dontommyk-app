@@ -11,6 +11,10 @@ import 'package:tommy/view/features/assessment/domain/repositories/assessment_re
 import 'package:tommy/view/features/assessment/domain/usecases/get_initial_assessment_usecase.dart';
 import 'package:tommy/view/features/assessment/domain/usecases/submit_initial_assessment_usecase.dart';
 import 'package:tommy/view/features/assessment/presentation/bloc/assessment_bloc.dart';
+import 'package:tommy/view/features/home/domain/repositories/home_repository.dart';
+import 'package:tommy/view/features/home/domain/usecases/get_home_data_usecase.dart';
+import 'package:tommy/view/features/home/presentation/bloc/home_bloc.dart';
+import 'package:tommy/view/features/home/presentation/bloc/home_event.dart';
 import 'package:tommy/view/features/profile/domain/repositories/profile_repository.dart';
 import 'package:tommy/view/features/profile/domain/usecases/update_profile_usecase.dart';
 import 'package:tommy/view/features/profile/presentation/bloc/profile_bloc.dart';
@@ -178,11 +182,27 @@ abstract final class AppRoute {
       ),
       home || dashboard => MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const DashboardPage(),
+        builder: (context) {
+          final repo = context.read<HomeRepository>();
+          return BlocProvider(
+            create: (_) => HomeBloc(
+              getHomeDataUseCase: GetHomeDataUseCase(repo),
+            )..add(const FetchHomeDataEvent()),
+            child: const DashboardPage(),
+          );
+        },
       ),
       homePage => MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const HomePage(),
+        builder: (context) {
+          final repo = context.read<HomeRepository>();
+          return BlocProvider(
+            create: (_) => HomeBloc(
+              getHomeDataUseCase: GetHomeDataUseCase(repo),
+            )..add(const FetchHomeDataEvent()),
+            child: const HomePage(),
+          );
+        },
       ),
       aiCoach => MaterialPageRoute<void>(
         settings: settings,

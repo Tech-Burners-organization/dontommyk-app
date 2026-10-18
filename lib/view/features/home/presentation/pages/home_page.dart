@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:tommy/view/component/background/app_background.dart';
+import 'package:tommy/view/component/common_button/common_button.dart';
 import 'package:tommy/view/component/common_text/common_text.dart';
+import 'package:tommy/view/features/home/data/models/home_data_model.dart';
+import 'package:tommy/view/features/home/presentation/bloc/home_bloc.dart';
+import 'package:tommy/view/features/home/presentation/bloc/home_event.dart';
+import 'package:tommy/view/features/home/presentation/bloc/home_state.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -10,288 +16,398 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: AppBackground(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(height: 20.h),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Image.asset('assets/image/logo.png', width: 140.w),
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: Colors.white24,
-                    backgroundImage: const NetworkImage(
-                      'https://i.pravatar.cc/150?img=11',
-                    ), // Placeholder for user avatar
+        child: SafeArea(
+          child: BlocBuilder<HomeBloc, HomeState>(
+            builder: (context, state) {
+              if (state is HomeLoading || state is HomeInitial) {
+                return const Center(
+                  child: CircularProgressIndicator(
+                    color: Color(0xFFD48B3B),
                   ),
-                ],
-              ),
-              SizedBox(height: 30.h),
+                );
+              }
 
-              // Score Card
-              Container(
-                padding: const EdgeInsets.all(16),
-                clipBehavior: Clip.antiAlias,
-                decoration: ShapeDecoration(
-                  color: Colors.white.withValues(alpha: 0.04),
-                  shape: RoundedRectangleBorder(
-                    side: BorderSide(width: 1, color: const Color(0xFF4D4D4D)),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+              if (state is HomeError) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Circular Score
-                        Column(
-                          children: [
-                            SizedBox(
-                              width: 80,
-                              height: 80,
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  CircularProgressIndicator(
-                                    value: 0.77,
-                                    strokeWidth: 8,
-                                    backgroundColor: Colors.white10,
-                                    valueColor:
-                                        const AlwaysStoppedAnimation<Color>(
-                                          Color(0xFFD48B3B),
-                                        ),
-                                  ),
-                                  Center(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        const CommonText(
-                                          text: '77',
-                                          color: Colors.white,
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.w700,
-                                          lineHeight: 1,
-                                        ),
-                                        const CommonText(
-                                          text: '/100',
-                                          color: Colors.white54,
-                                          fontSize: 10,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            SizedBox(height: 12.h),
-                            const CommonText(
-                              text: 'Overall Score',
-                              color: Colors.white,
-                              fontSize: 12,
-                            ),
-                          ],
+                        const Icon(
+                          Icons.error_outline,
+                          color: Colors.redAccent,
+                          size: 60,
                         ),
-                        SizedBox(width: 24.w),
+                        SizedBox(height: 16.h),
+                        CommonText(
+                          text: state.message,
+                          color: Colors.white,
+                          fontSize: 16,
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 24.h),
+                        CommonButton(
+                          titleText: 'Retry',
+                          titleColor: Colors.black,
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFC77926), Color(0xFFFBE1A6)],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                          onTap: () {
+                            context.read<HomeBloc>().add(
+                              const FetchHomeDataEvent(),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
 
-                        // User Info
-                        Expanded(
+              if (state is HomeLoaded) {
+                final data = state.homeData;
+                return RefreshIndicator(
+                  color: const Color(0xFFD48B3B),
+                  backgroundColor: const Color(0xFF140D0B),
+                  onRefresh: () async {
+                    context.read<HomeBloc>().add(const FetchHomeDataEvent());
+                  },
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(height: 12.h),
+                        _buildHeader(data.profile),
+                        SizedBox(height: 24.h),
+                        _buildScoreCard(data),
+                        SizedBox(height: 20.h),
+                        _buildCategoryScores(data.scores),
+                        SizedBox(height: 28.h),
+                        _buildTodayPlan(data.todayPlan),
+                        SizedBox(height: 32.h),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(HomeProfileModel profile) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Image.asset('assets/image/logo.png', width: 140.w),
+        CircleAvatar(
+          radius: 20,
+          backgroundColor: Colors.white24,
+          backgroundImage: profile.profilePhoto.isNotEmpty
+              ? NetworkImage(profile.profilePhoto)
+              : null,
+          onBackgroundImageError: profile.profilePhoto.isNotEmpty
+              ? (_, __) {}
+              : null,
+          child: profile.profilePhoto.isEmpty
+              ? const Icon(Icons.person, color: Colors.white70)
+              : null,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildScoreCard(HomeDataModel data) {
+    final profile = data.profile;
+    final scores = data.scores;
+    final cycle = data.cycle;
+    final overallRatio = (scores.overall / 100.0).clamp(0.0, 1.0);
+    final dayRatio = (cycle.dayProgressPercent / 100.0).clamp(0.0, 1.0);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      clipBehavior: Clip.antiAlias,
+      decoration: ShapeDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        shape: RoundedRectangleBorder(
+          side: const BorderSide(width: 1, color: Color(0xFF4D4D4D)),
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Circular Score
+              Column(
+                children: [
+                  SizedBox(
+                    width: 80,
+                    height: 80,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        CircularProgressIndicator(
+                          value: overallRatio,
+                          strokeWidth: 8,
+                          backgroundColor: Colors.white10,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            Color(0xFFD48B3B),
+                          ),
+                        ),
+                        Center(
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const CommonText(
-                                text: 'Jordan Mitchell',
+                              CommonText(
+                                text: '${scores.overall}',
                                 color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
+                                fontSize: 24,
+                                fontWeight: FontWeight.w700,
+                                lineHeight: 1,
                               ),
-                              SizedBox(height: 4.h),
                               const CommonText(
-                                text: 'Senior Product Manager',
+                                text: '/100',
                                 color: Colors.white54,
-                                fontSize: 12,
-                              ),
-                              SizedBox(height: 12.h),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF382312),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.local_fire_department,
-                                      color: Color(0xFFD48B3B),
-                                      size: 12,
-                                    ),
-                                    SizedBox(width: 4.w),
-                                    const CommonText(
-                                      text: 'A recurring 7-day cycle',
-                                      color: Color(0xFFD48B3B),
-                                      fontSize: 10,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(height: 12.h),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: LinearProgressIndicator(
-                                      value: 0.15,
-                                      backgroundColor: Colors.white10,
-                                      valueColor:
-                                          const AlwaysStoppedAnimation<Color>(
-                                            Color(0xFFD48B3B),
-                                          ),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                  ),
-                                  SizedBox(width: 8.w),
-                                  const CommonText(
-                                    text: '15%',
-                                    color: Colors.white54,
-                                    fontSize: 10,
-                                  ),
-                                ],
+                                fontSize: 10,
                               ),
                             ],
                           ),
                         ),
                       ],
                     ),
-                    SizedBox(height: 20.h),
+                  ),
+                  SizedBox(height: 12.h),
+                  const CommonText(
+                    text: 'Overall Score',
+                    color: Colors.white,
+                    fontSize: 12,
+                  ),
+                ],
+              ),
+              SizedBox(width: 24.w),
 
-                    // AI Recommendation
+              // User Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CommonText(
+                      text: profile.fullName.isNotEmpty
+                          ? profile.fullName
+                          : 'Jordan Mitchell',
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    SizedBox(height: 4.h),
+                    CommonText(
+                      text: profile.designation.isNotEmpty
+                          ? profile.designation
+                          : 'Employee',
+                      color: Colors.white54,
+                      fontSize: 12,
+                    ),
+                    SizedBox(height: 12.h),
                     Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: ShapeDecoration(
-                        color: Colors.white.withValues(alpha: 0.08),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF382312),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          const CommonText(
-                            text: 'AI Recommendation:',
-                            color: Colors.white54,
-                            fontSize: 12,
+                          const Icon(
+                            Icons.local_fire_department,
+                            color: Color(0xFFD48B3B),
+                            size: 12,
                           ),
-                          SizedBox(height: 8.h),
-                          const CommonText(
-                            text:
-                                'Practice controlled breathing for 3 minutes today when you feel stressed or emotionally triggered.',
-                            color: Colors.white,
-                            fontSize: 13,
-                            maxLines: 3,
-                            textAlign: TextAlign.left,
+                          SizedBox(width: 4.w),
+                          CommonText(
+                            text: 'Day ${cycle.day} of ${cycle.totalDays}',
+                            color: const Color(0xFFD48B3B),
+                            fontSize: 10,
                           ),
                         ],
                       ),
                     ),
+                    SizedBox(height: 12.h),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: LinearProgressIndicator(
+                            value: dayRatio,
+                            backgroundColor: Colors.white10,
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              Color(0xFFD48B3B),
+                            ),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        SizedBox(width: 8.w),
+                        CommonText(
+                          text: '${cycle.dayProgressPercent.toInt()}%',
+                          color: Colors.white54,
+                          fontSize: 10,
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
-              SizedBox(height: 20.h),
-
-              // 4 Category Scores
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            ],
+          ),
+          if (data.aiRecommendation.isNotEmpty) ...[
+            SizedBox(height: 20.h),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: ShapeDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildScoreBox('78%', 'Behavioral', const Color(0xFFD48B3B)),
-                  _buildScoreBox('78%', 'Emotional', const Color(0xFFA55EFC)),
-                  _buildScoreBox('78%', 'Leadership', const Color(0xFF32C68A)),
-                  _buildScoreBox(
-                    '78%',
-                    'Communication',
-                    const Color(0xFFFBE1A6),
+                  const CommonText(
+                    text: 'AI Recommendation:',
+                    color: Colors.white54,
+                    fontSize: 12,
+                  ),
+                  SizedBox(height: 8.h),
+                  CommonText(
+                    text: data.aiRecommendation,
+                    color: Colors.white,
+                    fontSize: 13,
+                    maxLines: 4,
+                    textAlign: TextAlign.left,
                   ),
                 ],
               ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 
-              SizedBox(height: 30.h),
+  Widget _buildCategoryScores(HomeScoresModel scores) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _buildScoreBox(
+          '${scores.behavioral}%',
+          'Behavioral',
+          const Color(0xFFD48B3B),
+        ),
+        _buildScoreBox(
+          '${scores.emotional}%',
+          'Emotional',
+          const Color(0xFFA55EFC),
+        ),
+        _buildScoreBox(
+          '${scores.leadership}%',
+          'Leadership',
+          const Color(0xFF32C68A),
+        ),
+        _buildScoreBox(
+          '${scores.communication}%',
+          'Communication',
+          const Color(0xFFFBE1A6),
+        ),
+      ],
+    );
+  }
 
-              // Today's Plan
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const CommonText(
-                    text: 'Today\'s Plan',
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  RichText(
-                    text: const TextSpan(
-                      text: '1/4 ',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      children: [
-                        TextSpan(
-                          text: 'done',
-                          style: TextStyle(
-                            color: Colors.white54,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
+  Widget _buildTodayPlan(HomeTodayPlanModel todayPlan) {
+    final progress = todayPlan.totalCount > 0
+        ? (todayPlan.completedCount / todayPlan.totalCount).clamp(0.0, 1.0)
+        : 0.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const CommonText(
+              text: "Today's Plan",
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+            RichText(
+              text: TextSpan(
+                text: '${todayPlan.completedCount}/${todayPlan.totalCount} ',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+                children: const [
+                  TextSpan(
+                    text: 'done',
+                    style: TextStyle(
+                      color: Colors.white54,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: 12.h),
-              LinearProgressIndicator(
-                value: 0.25,
-                backgroundColor: Colors.white10,
-                valueColor: const AlwaysStoppedAnimation<Color>(
-                  Color(0xFFD48B3B),
-                ),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              SizedBox(height: 20.h),
-
-              // Tasks
-              _buildTaskTile(
-                'Trigger awareness journal',
-                'Emotional',
-                const Color(0xFFA55EFC),
-                isDone: true,
-              ),
-              _buildTaskTile(
-                'Active Listening Challenge',
-                'Communication',
-                const Color(0xFFFBE1A6),
-              ),
-              _buildTaskTile(
-                'Accountability self-evaluation',
-                'Leadership',
-                const Color(0xFF32C68A),
-              ),
-              _buildTaskTile(
-                'Daily reflection',
-                'Behavioral',
-                const Color(0xFFD48B3B),
-              ),
-
-              SizedBox(height: 40.h),
-            ],
-          ),
+            ),
+          ],
         ),
-      ),
+        SizedBox(height: 12.h),
+        LinearProgressIndicator(
+          value: progress,
+          backgroundColor: Colors.white10,
+          valueColor: const AlwaysStoppedAnimation<Color>(
+            Color(0xFFD48B3B),
+          ),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        SizedBox(height: 20.h),
+        if (todayPlan.tasks.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: const Color(0xFF161111),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: const CommonText(
+              text: 'No tasks scheduled for today.',
+              color: Colors.white54,
+              fontSize: 14,
+            ),
+          )
+        else
+          ...todayPlan.tasks.map(
+            (task) => _buildTaskTile(
+              title: task.title,
+              category: _formatCategory(task.category),
+              categoryColor: _getCategoryColor(task.category),
+              isDone: task.completed,
+            ),
+          ),
+      ],
     );
   }
 
@@ -319,10 +435,10 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildTaskTile(
-    String title,
-    String category,
-    Color categoryColor, {
+  Widget _buildTaskTile({
+    required String title,
+    required String category,
+    required Color categoryColor,
     bool isDone = false,
   }) {
     return Container(
@@ -395,5 +511,25 @@ class HomePage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Color _getCategoryColor(String category) {
+    switch (category.toLowerCase()) {
+      case 'behavioral':
+        return const Color(0xFFD48B3B);
+      case 'emotional':
+        return const Color(0xFFA55EFC);
+      case 'leadership':
+        return const Color(0xFF32C68A);
+      case 'communication':
+        return const Color(0xFFFBE1A6);
+      default:
+        return const Color(0xFFD48B3B);
+    }
+  }
+
+  String _formatCategory(String category) {
+    if (category.isEmpty) return '';
+    return category[0].toUpperCase() + category.substring(1).toLowerCase();
   }
 }
