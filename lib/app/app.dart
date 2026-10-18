@@ -13,6 +13,8 @@ import 'package:tommy/view/features/auth/domain/repositories/auth_repository.dar
 import 'package:tommy/view/features/home/domain/repositories/home_repository.dart';
 import 'package:tommy/view/features/profile/domain/repositories/profile_repository.dart';
 
+import 'package:tommy/view/features/progress/domain/repositories/progress_repository.dart';
+
 class TommyApp extends StatelessWidget {
   const TommyApp({required this.dependencies, super.key});
 
@@ -34,6 +36,9 @@ class TommyApp extends StatelessWidget {
         ),
         RepositoryProvider<HomeRepository>.value(
           value: dependencies.homeRepository,
+        ),
+        RepositoryProvider<ProgressRepository>.value(
+          value: dependencies.progressRepository,
         ),
       ],
       child: BlocProvider(

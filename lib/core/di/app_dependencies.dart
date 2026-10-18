@@ -16,6 +16,9 @@ import 'package:tommy/view/features/home/data/datasources/home_remote_data_sourc
 import 'package:tommy/view/features/home/data/repositories/home_repository_impl.dart';
 import 'package:tommy/view/features/home/domain/repositories/home_repository.dart';
 import 'package:tommy/view/features/profile/domain/repositories/profile_repository.dart';
+import 'package:tommy/view/features/progress/data/datasources/progress_remote_data_source.dart';
+import 'package:tommy/view/features/progress/data/repositories/progress_repository_impl.dart';
+import 'package:tommy/view/features/progress/domain/repositories/progress_repository.dart';
 
 class AppDependencies {
   AppDependencies._({
@@ -24,6 +27,7 @@ class AppDependencies {
     required this.assessmentRepository,
     required this.profileRepository,
     required this.homeRepository,
+    required this.progressRepository,
   });
 
   final ApiService apiService;
@@ -31,6 +35,7 @@ class AppDependencies {
   final AssessmentRepository assessmentRepository;
   final ProfileRepository profileRepository;
   final HomeRepository homeRepository;
+  final ProgressRepository progressRepository;
 
   factory AppDependencies.create() {
     final dio = Dio(
@@ -76,12 +81,17 @@ class AppDependencies {
     final homeRemoteDataSource = HomeRemoteDataSourceImpl(apiService);
     final homeRepository = HomeRepositoryImpl(homeRemoteDataSource);
 
+    final progressRemoteDataSource = ProgressRemoteDataSourceImpl(apiService);
+    final progressRepository =
+        ProgressRepositoryImpl(progressRemoteDataSource);
+
     return AppDependencies._(
       apiService: apiService,
       authRepository: authRepository,
       assessmentRepository: assessmentRepository,
       profileRepository: profileRepository,
       homeRepository: homeRepository,
+      progressRepository: progressRepository,
     );
   }
 }
