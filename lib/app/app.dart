@@ -7,6 +7,7 @@ import 'package:tommy/core/di/app_dependencies.dart';
 import 'package:tommy/core/network/api_service.dart';
 import 'package:tommy/route/app_route.dart';
 
+import 'package:tommy/view/features/ai_coach/domain/repositories/ai_coach_repository.dart';
 import 'package:tommy/view/features/assessment/domain/repositories/assessment_repository.dart';
 import 'package:tommy/view/features/auth/domain/repositories/auth_repository.dart';
 
@@ -39,6 +40,9 @@ class TommyApp extends StatelessWidget {
         ),
         RepositoryProvider<ProgressRepository>.value(
           value: dependencies.progressRepository,
+        ),
+        RepositoryProvider<AiCoachRepository>.value(
+          value: dependencies.aiCoachRepository,
         ),
       ],
       child: BlocProvider(
