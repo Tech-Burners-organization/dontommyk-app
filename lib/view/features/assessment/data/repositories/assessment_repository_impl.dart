@@ -1,5 +1,6 @@
 import 'package:tommy/core/errors/failure_mapper.dart';
 import 'package:tommy/core/result/result.dart';
+import 'package:tommy/core/utils/prefs_helper.dart';
 import 'package:tommy/view/features/assessment/data/datasources/assessment_remote_data_source.dart';
 import 'package:tommy/view/features/assessment/data/models/assessment_model.dart';
 import 'package:tommy/view/features/assessment/domain/repositories/assessment_repository.dart';
@@ -31,6 +32,7 @@ class AssessmentRepositoryImpl implements AssessmentRepository {
         benchmarkId: benchmarkId,
         answers: answers,
       );
+      await PrefsHelper.setInitialAssessmentCompleted(true);
       return ResultSuccess(message);
     } catch (e) {
       return ResultFailure(FailureMapper.from(e));

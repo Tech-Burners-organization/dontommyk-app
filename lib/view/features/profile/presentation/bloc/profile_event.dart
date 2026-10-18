@@ -1,0 +1,37 @@
+part of 'profile_bloc.dart';
+
+sealed class ProfileEvent extends Equatable {
+  const ProfileEvent();
+
+  @override
+  List<Object?> get props => [];
+}
+
+class UpdateProfileSubmitted extends ProfileEvent {
+  final String firstName;
+  final String lastName;
+  final String designation;
+  final int? age;
+  final String? location;
+  final String? imagePath;
+
+  const UpdateProfileSubmitted({
+    required this.firstName,
+    required this.lastName,
+    required this.designation,
+    this.age,
+    this.location,
+    this.imagePath,
+  });
+
+  @override
+  List<Object?> get props => [
+    firstName,
+    lastName,
+    designation,
+    age,
+    location,
+    imagePath,
+  ];
+}
+

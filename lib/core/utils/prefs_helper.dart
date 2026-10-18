@@ -16,6 +16,8 @@ abstract final class PrefsHelper {
   static String rating = '';
   static String countryCode = '';
   static bool isOnline = false;
+  static bool isProfileCompleted = false;
+  static bool isInitialAssessmentCompleted = false;
 
   static Future<void> init() async {
     if (!_initialized) {
@@ -38,6 +40,9 @@ abstract final class PrefsHelper {
     countryCode = _preferences.getString('countryCode') ?? '';
     isOnline = _preferences.getBool('isOnline') ?? false;
     isRemember = _preferences.getBool('isRemember') ?? false;
+    isProfileCompleted = _preferences.getBool('isProfileCompleted') ?? false;
+    isInitialAssessmentCompleted =
+        _preferences.getBool('isInitialAssessmentCompleted') ?? false;
   }
 
   static Future<void> getAllData() => init();
@@ -73,6 +78,16 @@ abstract final class PrefsHelper {
     await _ensureInitialized();
     await _preferences.setBool(key, value);
     _loadCachedValues();
+  }
+
+  static Future<void> setProfileCompleted(bool value) async {
+    await setBool('isProfileCompleted', value);
+    isProfileCompleted = value;
+  }
+
+  static Future<void> setInitialAssessmentCompleted(bool value) async {
+    await setBool('isInitialAssessmentCompleted', value);
+    isInitialAssessmentCompleted = value;
   }
 
   static Future<void> setInt(String key, int value) async {

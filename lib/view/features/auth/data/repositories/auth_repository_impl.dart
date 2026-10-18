@@ -3,6 +3,7 @@ import 'package:tommy/core/errors/failure_mapper.dart';
 import 'package:tommy/core/result/result.dart';
 import 'package:tommy/core/utils/prefs_helper.dart';
 import 'package:tommy/view/features/auth/data/datasources/auth_remote_data_source.dart';
+import 'package:tommy/view/features/auth/data/models/login_response.dart';
 import 'package:tommy/view/features/auth/domain/repositories/auth_repository.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -11,11 +12,20 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl(this.remoteDataSource);
 
   @override
-  Future<Result<void>> login(String email, String password) async {
+  Future<Result<LoginData>> login(String email, String password) async {
     try {
       final loginData = await remoteDataSource.login(email, password);
       await PrefsHelper.setString('token', loginData.accessToken);
       await PrefsHelper.setString('refreshToken', loginData.refreshToken);
+      if (loginData.role.isNotEmpty) {
+        await PrefsHelper.setString('role', loginData.role);
+      }
+      await PrefsHelper.setProfileCompleted(
+        loginData.onboarding.isProfileCompleted,
+      );
+      await PrefsHelper.setInitialAssessmentCompleted(
+        loginData.onboarding.isInitialAssessmentCompleted,
+      );
 
       try {
         final parts = loginData.accessToken.split('.');
@@ -27,7 +37,7 @@ class AuthRepositoryImpl implements AuthRepository {
           if (map['email'] != null) {
             await PrefsHelper.setString('email', map['email'].toString());
           }
-          if (map['role'] != null) {
+          if (map['role'] != null && loginData.role.isEmpty) {
             await PrefsHelper.setString('role', map['role'].toString());
           }
           if (map['id'] != null) {
@@ -36,7 +46,7 @@ class AuthRepositoryImpl implements AuthRepository {
         }
       } catch (_) {}
 
-      return const ResultSuccess(null);
+      return ResultSuccess(loginData);
     } catch (e) {
       return ResultFailure(FailureMapper.from(e));
     }

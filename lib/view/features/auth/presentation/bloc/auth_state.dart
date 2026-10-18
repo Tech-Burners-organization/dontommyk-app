@@ -11,7 +11,14 @@ final class AuthInitial extends AuthState {}
 
 final class AuthLoading extends AuthState {}
 
-final class AuthSuccess extends AuthState {}
+final class AuthSuccess extends AuthState {
+  final LoginData loginData;
+
+  const AuthSuccess(this.loginData);
+
+  @override
+  List<Object?> get props => [loginData];
+}
 
 final class ForgotPasswordSuccess extends AuthState {
   final String message;

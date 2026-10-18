@@ -10,6 +10,8 @@ import 'package:tommy/route/app_route.dart';
 import 'package:tommy/view/features/assessment/domain/repositories/assessment_repository.dart';
 import 'package:tommy/view/features/auth/domain/repositories/auth_repository.dart';
 
+import 'package:tommy/view/features/profile/domain/repositories/profile_repository.dart';
+
 class TommyApp extends StatelessWidget {
   const TommyApp({required this.dependencies, super.key});
 
@@ -25,6 +27,9 @@ class TommyApp extends StatelessWidget {
         ),
         RepositoryProvider<AssessmentRepository>.value(
           value: dependencies.assessmentRepository,
+        ),
+        RepositoryProvider<ProfileRepository>.value(
+          value: dependencies.profileRepository,
         ),
       ],
       child: BlocProvider(

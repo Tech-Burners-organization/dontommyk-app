@@ -11,6 +11,9 @@ import 'package:tommy/view/features/assessment/domain/repositories/assessment_re
 import 'package:tommy/view/features/assessment/domain/usecases/get_initial_assessment_usecase.dart';
 import 'package:tommy/view/features/assessment/domain/usecases/submit_initial_assessment_usecase.dart';
 import 'package:tommy/view/features/assessment/presentation/bloc/assessment_bloc.dart';
+import 'package:tommy/view/features/profile/domain/repositories/profile_repository.dart';
+import 'package:tommy/view/features/profile/domain/usecases/update_profile_usecase.dart';
+import 'package:tommy/view/features/profile/presentation/bloc/profile_bloc.dart';
 
 import 'package:tommy/view/features/ai_coach/presentation/pages/ai_coach_page.dart';
 import 'package:tommy/view/features/assessment/presentation/pages/assessment_page.dart';
@@ -59,6 +62,23 @@ abstract final class AppRoute {
   static const String termsAndConditions = '/profile/terms-and-conditions';
   static const String aboutUs = '/profile/about-us';
 
+  /// Determines the next route based on onboarding flags:
+  /// - Both true -> [home]
+  /// - Profile incomplete -> [profileSetup]
+  /// - Assessment incomplete -> [assessment]
+  static String getOnboardingNextRoute({
+    required bool isProfileCompleted,
+    required bool isInitialAssessmentCompleted,
+  }) {
+    if (isProfileCompleted && isInitialAssessmentCompleted) {
+      return home;
+    } else if (!isProfileCompleted) {
+      return profileSetup;
+    } else {
+      return assessment;
+    }
+  }
+
   static AuthBloc _buildAuthBloc(BuildContext context) {
     final repo = context.read<AuthRepository>();
     return AuthBloc(
@@ -102,7 +122,15 @@ abstract final class AppRoute {
       ),
       profileSetup => MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const ProfileSetupPage(),
+        builder: (context) {
+          final repo = context.read<ProfileRepository>();
+          return BlocProvider(
+            create: (_) => ProfileBloc(
+              updateProfileUseCase: UpdateProfileUseCase(repo),
+            ),
+            child: const ProfileSetupPage(),
+          );
+        },
       ),
       forgotPassword => MaterialPageRoute<void>(
         settings: settings,

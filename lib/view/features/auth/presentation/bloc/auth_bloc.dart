@@ -1,6 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:tommy/core/result/result.dart';
+import 'package:tommy/view/features/auth/data/models/login_response.dart';
 import 'package:tommy/view/features/auth/domain/usecases/forgot_password_usecase.dart';
 import 'package:tommy/view/features/auth/domain/usecases/login_usecase.dart';
 import 'package:tommy/view/features/auth/domain/usecases/resend_otp_usecase.dart';
@@ -41,8 +42,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
 
     switch (result) {
-      case ResultSuccess():
-        emit(AuthSuccess());
+      case ResultSuccess(data: final loginData):
+        emit(AuthSuccess(loginData));
       case ResultFailure(failure: final failure):
         emit(AuthFailure(failure.message));
     }

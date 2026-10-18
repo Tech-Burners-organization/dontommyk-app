@@ -180,10 +180,14 @@ class _LoginPageState extends State<LoginPage> {
                       message: 'User logged in successfully.',
                       isSuccess: true,
                     );
-                    Navigator.pushReplacementNamed(
-                      context,
-                      AppRoute.profileSetup,
+
+                    final onboarding = state.loginData.onboarding;
+                    final nextRoute = AppRoute.getOnboardingNextRoute(
+                      isProfileCompleted: onboarding.isProfileCompleted,
+                      isInitialAssessmentCompleted:
+                          onboarding.isInitialAssessmentCompleted,
                     );
+                    Navigator.pushReplacementNamed(context, nextRoute);
                   } else if (state is AuthFailure) {
                     showAppSnackBar(
                       context,

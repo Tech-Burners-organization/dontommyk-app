@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tommy/core/utils/prefs_helper.dart';
 import 'package:tommy/route/app_route.dart';
 import 'package:tommy/view/component/background/app_background.dart';
 import 'package:tommy/view/component/common_text/common_text.dart';
@@ -16,7 +17,16 @@ class _SplashPageState extends State<SplashPage> {
     super.initState();
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
-        Navigator.pushReplacementNamed(context, AppRoute.welcome);
+        if (PrefsHelper.token.isNotEmpty) {
+          final nextRoute = AppRoute.getOnboardingNextRoute(
+            isProfileCompleted: PrefsHelper.isProfileCompleted,
+            isInitialAssessmentCompleted:
+                PrefsHelper.isInitialAssessmentCompleted,
+          );
+          Navigator.pushReplacementNamed(context, nextRoute);
+        } else {
+          Navigator.pushReplacementNamed(context, AppRoute.welcome);
+        }
       }
     });
   }

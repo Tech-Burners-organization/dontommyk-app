@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:tommy/core/utils/prefs_helper.dart';
 import 'package:tommy/route/app_route.dart';
 import 'package:tommy/view/component/background/app_background.dart';
 import 'package:tommy/view/component/common_button/common_button.dart';
@@ -24,12 +25,25 @@ class AssessmentPage extends StatelessWidget {
                   message: state.message,
                   isSuccess: true,
                 );
+                final nextRoute = AppRoute.getOnboardingNextRoute(
+                  isProfileCompleted: PrefsHelper.isProfileCompleted,
+                  isInitialAssessmentCompleted: true,
+                );
                 Navigator.pushNamedAndRemoveUntil(
                   context,
-                  AppRoute.dashboard,
+                  nextRoute,
                   (route) => false,
                 );
               } else if (state is AssessmentError) {
+                if (state.message.toLowerCase().contains('not found')) {
+                  PrefsHelper.setInitialAssessmentCompleted(true);
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    AppRoute.home,
+                    (route) => false,
+                  );
+                  return;
+                }
                 showAppSnackBar(
                   context,
                   message: state.message,
@@ -47,27 +61,35 @@ class AssessmentPage extends StatelessWidget {
               }
 
               if (state is AssessmentError) {
+                final isNotFound =
+                    state.message.toLowerCase().contains('not found');
                 return Center(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
-                          Icons.error_outline,
-                          color: Colors.redAccent,
+                        Icon(
+                          isNotFound
+                              ? Icons.check_circle_outline
+                              : Icons.error_outline,
+                          color: isNotFound
+                              ? const Color(0xFFD48B3B)
+                              : Colors.redAccent,
                           size: 60,
                         ),
                         SizedBox(height: 16.h),
                         CommonText(
-                          text: state.message,
+                          text: isNotFound
+                              ? 'Initial Assessment is already completed or not found.'
+                              : state.message,
                           color: Colors.white,
                           fontSize: 16,
                           textAlign: TextAlign.center,
                         ),
                         SizedBox(height: 24.h),
                         CommonButton(
-                          titleText: 'Retry',
+                          titleText: isNotFound ? 'Go to Home' : 'Retry',
                           titleColor: Colors.black,
                           gradient: const LinearGradient(
                             colors: [Color(0xFFC77926), Color(0xFFFBE1A6)],
@@ -75,9 +97,18 @@ class AssessmentPage extends StatelessWidget {
                             end: Alignment.centerRight,
                           ),
                           onTap: () {
-                            context.read<AssessmentBloc>().add(
-                              const FetchAssessmentEvent(),
-                            );
+                            if (isNotFound) {
+                              PrefsHelper.setInitialAssessmentCompleted(true);
+                              Navigator.pushNamedAndRemoveUntil(
+                                context,
+                                AppRoute.home,
+                                (route) => false,
+                              );
+                            } else {
+                              context.read<AssessmentBloc>().add(
+                                const FetchAssessmentEvent(),
+                              );
+                            }
                           },
                         ),
                       ],
