@@ -59,3 +59,18 @@ class ResetPasswordSubmitted extends AuthEvent {
   @override
   List<Object?> get props => [newPassword, confirmPassword, token];
 }
+
+class ChangePasswordSubmitted extends AuthEvent {
+  final String currentPassword;
+  final String newPassword;
+  final String confirmPassword;
+
+  const ChangePasswordSubmitted({
+    required this.currentPassword,
+    required this.newPassword,
+    required this.confirmPassword,
+  });
+
+  @override
+  List<Object?> get props => [currentPassword, newPassword, confirmPassword];
+}

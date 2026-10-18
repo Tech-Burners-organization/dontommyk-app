@@ -2,7 +2,11 @@ import 'dart:convert';
 import 'package:tommy/core/network/api_service.dart';
 import 'package:tommy/view/features/profile/data/models/employee_profile_model.dart';
 
+import 'package:tommy/view/features/profile/data/models/legal_content_model.dart';
+
 abstract class ProfileRemoteDataSource {
+  Future<EmployeeProfile> getProfile();
+
   Future<EmployeeProfile> updateProfile({
     required String firstName,
     required String lastName,
@@ -11,12 +15,34 @@ abstract class ProfileRemoteDataSource {
     String? location,
     String? imagePath,
   });
+
+  Future<LegalContentModel> getLegalContent(String slug);
+
+  Future<String> deleteAccount();
 }
 
 class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   final ApiService apiService;
 
   ProfileRemoteDataSourceImpl(this.apiService);
+
+  @override
+  Future<EmployeeProfile> getProfile() async {
+    final response = await apiService.getData<EmployeeProfile>(
+      '/employees/profile',
+      decoder: (json) => EmployeeProfile.fromJson(json as Map<String, dynamic>),
+    );
+    return response.data;
+  }
+
+  @override
+  Future<LegalContentModel> getLegalContent(String slug) async {
+    final response = await apiService.getData<LegalContentModel>(
+      '/legal-contents/$slug',
+      decoder: (json) => LegalContentModel.fromJson(json as Map<String, dynamic>),
+    );
+    return response.data;
+  }
 
   @override
   Future<EmployeeProfile> updateProfile({
@@ -54,6 +80,15 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     );
 
     return response.data;
+  }
+
+  @override
+  Future<String> deleteAccount() async {
+    final response = await apiService.deleteData<dynamic>(
+      '/employees/profile',
+      decoder: (json) => json,
+    );
+    return response.message ?? 'Account deleted successfully.';
   }
 }
 

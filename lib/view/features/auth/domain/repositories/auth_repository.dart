@@ -11,4 +11,9 @@ abstract class AuthRepository {
     String confirmPassword, {
     String? token,
   });
+  Future<Result<String>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  });
 }

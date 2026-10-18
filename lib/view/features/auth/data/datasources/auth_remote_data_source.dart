@@ -11,6 +11,11 @@ abstract class AuthRemoteDataSource {
     String confirmPassword, {
     String? token,
   });
+  Future<String> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  });
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -98,5 +103,23 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       decoder: (json) => json as Map<String, dynamic>,
     );
     return response.message ?? 'Password reset successfully.';
+  }
+
+  @override
+  Future<String> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    final response = await apiService.postData<Map<String, dynamic>>(
+      '/auth/change-password',
+      {
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+        'confirmPassword': confirmPassword,
+      },
+      decoder: (json) => json as Map<String, dynamic>,
+    );
+    return response.message ?? 'Your password has been successfully changed';
   }
 }

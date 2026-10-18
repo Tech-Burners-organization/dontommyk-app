@@ -102,4 +102,22 @@ class AuthRepositoryImpl implements AuthRepository {
       return ResultFailure(FailureMapper.from(e));
     }
   }
+
+  @override
+  Future<Result<String>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    try {
+      final message = await remoteDataSource.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+        confirmPassword: confirmPassword,
+      );
+      return ResultSuccess(message);
+    } catch (e) {
+      return ResultFailure(FailureMapper.from(e));
+    }
+  }
 }

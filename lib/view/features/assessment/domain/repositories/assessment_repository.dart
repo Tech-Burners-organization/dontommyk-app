@@ -1,4 +1,6 @@
 import 'package:tommy/core/result/result.dart';
+import 'package:tommy/view/features/assessment/data/models/assessment_detail_model.dart';
+import 'package:tommy/view/features/assessment/data/models/assessment_history_model.dart';
 import 'package:tommy/view/features/assessment/data/models/assessment_model.dart';
 
 abstract class AssessmentRepository {
@@ -8,5 +10,7 @@ abstract class AssessmentRepository {
     required String benchmarkId,
     required List<AssessmentAnswer> answers,
   });
+  Future<Result<List<AssessmentHistoryItemModel>>> getAssessmentHistory();
+  Future<Result<AssessmentDetailModel>> getAssessmentDetail(String assessmentId);
 }
 

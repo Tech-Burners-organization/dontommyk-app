@@ -1,22 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tommy/view/features/auth/domain/repositories/auth_repository.dart';
+import 'package:tommy/view/features/auth/domain/usecases/change_password_usecase.dart';
 import 'package:tommy/view/features/auth/domain/usecases/forgot_password_usecase.dart';
 import 'package:tommy/view/features/auth/domain/usecases/login_usecase.dart';
 import 'package:tommy/view/features/auth/domain/usecases/resend_otp_usecase.dart';
 import 'package:tommy/view/features/auth/domain/usecases/reset_password_usecase.dart';
 import 'package:tommy/view/features/auth/domain/usecases/verify_email_usecase.dart';
 import 'package:tommy/view/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:tommy/view/features/assessment/data/models/assessment_history_model.dart';
 import 'package:tommy/view/features/assessment/domain/repositories/assessment_repository.dart';
+import 'package:tommy/view/features/assessment/domain/usecases/get_assessment_detail_usecase.dart';
+import 'package:tommy/view/features/assessment/domain/usecases/get_assessment_history_usecase.dart';
 import 'package:tommy/view/features/assessment/domain/usecases/get_initial_assessment_usecase.dart';
 import 'package:tommy/view/features/assessment/domain/usecases/submit_initial_assessment_usecase.dart';
 import 'package:tommy/view/features/assessment/presentation/bloc/assessment_bloc.dart';
+import 'package:tommy/view/features/assessment/presentation/bloc/assessment_detail_cubit.dart';
+import 'package:tommy/view/features/assessment/presentation/bloc/assessment_history_cubit.dart';
 import 'package:tommy/view/features/home/domain/repositories/home_repository.dart';
 import 'package:tommy/view/features/home/domain/usecases/get_home_data_usecase.dart';
 import 'package:tommy/view/features/home/presentation/bloc/home_bloc.dart';
 import 'package:tommy/view/features/home/presentation/bloc/home_event.dart';
+import 'package:tommy/view/features/profile/data/models/employee_profile_model.dart';
 import 'package:tommy/view/features/profile/domain/repositories/profile_repository.dart';
+import 'package:tommy/view/features/profile/domain/usecases/get_legal_content_usecase.dart';
+import 'package:tommy/view/features/profile/domain/usecases/get_profile_usecase.dart';
 import 'package:tommy/view/features/profile/domain/usecases/update_profile_usecase.dart';
+import 'package:tommy/view/features/profile/presentation/bloc/legal_content_cubit.dart';
 import 'package:tommy/view/features/profile/presentation/bloc/profile_bloc.dart';
 
 import 'package:tommy/view/features/ai_coach/presentation/pages/ai_coach_page.dart';
@@ -91,6 +101,7 @@ abstract final class AppRoute {
       verifyEmailUseCase: VerifyEmailUseCase(repo),
       resendOtpUseCase: ResendOtpUseCase(repo),
       resetPasswordUseCase: ResetPasswordUseCase(repo),
+      changePasswordUseCase: ChangePasswordUseCase(repo),
     );
   }
 
@@ -218,31 +229,99 @@ abstract final class AppRoute {
       ),
       editProfile => MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const EditProfilePage(),
+        builder: (context) {
+          final employee = settings.arguments as EmployeeProfile?;
+          final repo = context.read<ProfileRepository>();
+          return BlocProvider(
+            create: (_) => ProfileBloc(
+              updateProfileUseCase: UpdateProfileUseCase(repo),
+              getProfileUseCase: GetProfileUseCase(repo),
+            ),
+            child: EditProfilePage(profile: employee),
+          );
+        },
       ),
       changePassword => MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const ChangePasswordPage(),
+        builder: (context) => BlocProvider(
+          create: (_) => _buildAuthBloc(context),
+          child: const ChangePasswordPage(),
+        ),
       ),
       assessmentHistory => MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const AssessmentHistoryPage(),
+        builder: (context) {
+          final repo = context.read<AssessmentRepository>();
+          return BlocProvider(
+            create: (_) => AssessmentHistoryCubit(
+              getAssessmentHistoryUseCase: GetAssessmentHistoryUseCase(repo),
+            )..fetchHistory(),
+            child: const AssessmentHistoryPage(),
+          );
+        },
       ),
       assessmentHistoryDetail => MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const AssessmentHistoryDetailPage(),
+        builder: (context) {
+          final args = settings.arguments;
+          final assessmentId = switch (args) {
+            AssessmentHistoryItemModel(:final assessmentId) => assessmentId,
+            String id => id,
+            _ => '',
+          };
+          final repo = context.read<AssessmentRepository>();
+          return BlocProvider(
+            create: (_) => AssessmentDetailCubit(
+              getAssessmentDetailUseCase: GetAssessmentDetailUseCase(repo),
+            )..fetchDetail(assessmentId),
+            child: AssessmentHistoryDetailPage(assessmentId: assessmentId),
+          );
+        },
       ),
       privacyPolicy => MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const StaticContentPage(title: 'Privacy policy'),
+        builder: (context) {
+          final repo = context.read<ProfileRepository>();
+          return BlocProvider(
+            create: (_) => LegalContentCubit(
+              getLegalContentUseCase: GetLegalContentUseCase(repo),
+            )..fetchContent('privacy-policy'),
+            child: const StaticContentPage(
+              title: 'Privacy Policy',
+              slug: 'privacy-policy',
+            ),
+          );
+        },
       ),
       termsAndConditions => MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const StaticContentPage(title: 'Terms & Conditions'),
+        builder: (context) {
+          final repo = context.read<ProfileRepository>();
+          return BlocProvider(
+            create: (_) => LegalContentCubit(
+              getLegalContentUseCase: GetLegalContentUseCase(repo),
+            )..fetchContent('terms-and-conditions'),
+            child: const StaticContentPage(
+              title: 'Terms & Conditions',
+              slug: 'terms-and-conditions',
+            ),
+          );
+        },
       ),
       aboutUs => MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const StaticContentPage(title: 'About Us'),
+        builder: (context) {
+          final repo = context.read<ProfileRepository>();
+          return BlocProvider(
+            create: (_) => LegalContentCubit(
+              getLegalContentUseCase: GetLegalContentUseCase(repo),
+            )..fetchContent('about-us'),
+            child: const StaticContentPage(
+              title: 'About Us',
+              slug: 'about-us',
+            ),
+          );
+        },
       ),
       _ => MaterialPageRoute<void>(
         settings: settings,

@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:tommy/core/result/result.dart';
 import 'package:tommy/view/features/auth/data/models/login_response.dart';
+import 'package:tommy/view/features/auth/domain/usecases/change_password_usecase.dart';
 import 'package:tommy/view/features/auth/domain/usecases/forgot_password_usecase.dart';
 import 'package:tommy/view/features/auth/domain/usecases/login_usecase.dart';
 import 'package:tommy/view/features/auth/domain/usecases/resend_otp_usecase.dart';
@@ -17,6 +18,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final VerifyEmailUseCase verifyEmailUseCase;
   final ResendOtpUseCase resendOtpUseCase;
   final ResetPasswordUseCase resetPasswordUseCase;
+  final ChangePasswordUseCase? changePasswordUseCase;
 
   AuthBloc({
     required this.loginUseCase,
@@ -24,12 +26,36 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required this.verifyEmailUseCase,
     required this.resendOtpUseCase,
     required this.resetPasswordUseCase,
+    this.changePasswordUseCase,
   }) : super(AuthInitial()) {
     on<LoginSubmitted>(_onLoginSubmitted);
     on<ForgotPasswordSubmitted>(_onForgotPasswordSubmitted);
     on<VerifyEmailSubmitted>(_onVerifyEmailSubmitted);
     on<ResendOtpSubmitted>(_onResendOtpSubmitted);
     on<ResetPasswordSubmitted>(_onResetPasswordSubmitted);
+    on<ChangePasswordSubmitted>(_onChangePasswordSubmitted);
+  }
+
+  Future<void> _onChangePasswordSubmitted(
+    ChangePasswordSubmitted event,
+    Emitter<AuthState> emit,
+  ) async {
+    if (changePasswordUseCase == null) return;
+    emit(AuthLoading());
+    final result = await changePasswordUseCase!(
+      ChangePasswordParams(
+        currentPassword: event.currentPassword,
+        newPassword: event.newPassword,
+        confirmPassword: event.confirmPassword,
+      ),
+    );
+
+    switch (result) {
+      case ResultSuccess(data: final message):
+        emit(ChangePasswordSuccess(message));
+      case ResultFailure(failure: final failure):
+        emit(AuthFailure(failure.message));
+    }
   }
 
   Future<void> _onLoginSubmitted(

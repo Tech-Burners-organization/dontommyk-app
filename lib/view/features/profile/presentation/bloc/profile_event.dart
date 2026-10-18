@@ -7,6 +7,10 @@ sealed class ProfileEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+class FetchProfile extends ProfileEvent {
+  const FetchProfile();
+}
+
 class UpdateProfileSubmitted extends ProfileEvent {
   final String firstName;
   final String lastName;
@@ -33,5 +37,9 @@ class UpdateProfileSubmitted extends ProfileEvent {
     location,
     imagePath,
   ];
+}
+
+class DeleteAccountSubmitted extends ProfileEvent {
+  const DeleteAccountSubmitted();
 }
 
