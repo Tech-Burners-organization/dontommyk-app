@@ -8,6 +8,11 @@ abstract class AiCoachRemoteDataSource {
   Future<List<AiConversationModel>> getConversations();
   Future<AiConversationModel> createConversation({required String title});
   Future<List<AiMessageModel>> getMessages(String conversationId);
+  Future<AiMessageModel> sendRestMessage({
+    required String conversationId,
+    required String content,
+  });
+  Future<void> deleteConversation(String conversationId);
 }
 
 class AiCoachRemoteDataSourceImpl implements AiCoachRemoteDataSource {
@@ -104,6 +109,42 @@ class AiCoachRemoteDataSourceImpl implements AiCoachRemoteDataSource {
       return response.data;
     } catch (e) {
       debugPrint('AiCoachRemoteDataSourceImpl.getMessages error: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<AiMessageModel> sendRestMessage({
+    required String conversationId,
+    required String content,
+  }) async {
+    try {
+      final response = await apiService.postData<AiMessageModel>(
+        '/ai-messages/conversation/$conversationId',
+        {'content': content},
+        decoder: (json) {
+          final rootMap = _asMap(json);
+          final dynamic rawData =
+              rootMap.containsKey('data') ? rootMap['data'] : rootMap;
+          if (rawData is List && rawData.isNotEmpty) {
+            return AiMessageModel.fromJson(_asMap(rawData.last));
+          }
+          return AiMessageModel.fromJson(_asMap(rawData));
+        },
+      );
+      return response.data;
+    } catch (e) {
+      debugPrint('AiCoachRemoteDataSourceImpl.sendRestMessage error: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> deleteConversation(String conversationId) async {
+    try {
+      await apiService.deleteData<dynamic>('/ai-conversations/$conversationId');
+    } catch (e) {
+      debugPrint('AiCoachRemoteDataSourceImpl.deleteConversation error: $e');
       rethrow;
     }
   }

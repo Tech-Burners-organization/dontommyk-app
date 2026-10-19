@@ -11,8 +11,10 @@ import 'package:tommy/view/features/ai_coach/data/models/ai_conversation_model.d
 import 'package:tommy/view/features/ai_coach/data/models/ai_message_model.dart';
 import 'package:tommy/view/features/ai_coach/domain/repositories/ai_coach_repository.dart';
 import 'package:tommy/view/features/ai_coach/domain/usecases/create_ai_conversation_usecase.dart';
+import 'package:tommy/view/features/ai_coach/domain/usecases/delete_ai_conversation_usecase.dart';
 import 'package:tommy/view/features/ai_coach/domain/usecases/get_ai_conversations_usecase.dart';
 import 'package:tommy/view/features/ai_coach/domain/usecases/get_ai_messages_usecase.dart';
+import 'package:tommy/view/features/ai_coach/domain/usecases/send_ai_message_usecase.dart';
 import 'package:tommy/view/features/ai_coach/presentation/bloc/ai_conversations_cubit.dart';
 
 class AiCoachPage extends StatelessWidget {
@@ -26,6 +28,8 @@ class AiCoachPage extends StatelessWidget {
         getAiConversationsUseCase: GetAiConversationsUseCase(repo),
         createAiConversationUseCase: CreateAiConversationUseCase(repo),
         getAiMessagesUseCase: GetAiMessagesUseCase(repo),
+        sendAiMessageUseCase: SendAiMessageUseCase(repo),
+        deleteAiConversationUseCase: DeleteAiConversationUseCase(repo),
       )..fetchConversations(),
       child: const _AiCoachPageView(),
     );
@@ -59,6 +63,18 @@ class _AiCoachPageViewState extends State<_AiCoachPageView> {
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   String _formatDate(String? isoString) {
@@ -96,6 +112,9 @@ class _AiCoachPageViewState extends State<_AiCoachPageView> {
                           _ => 'AI Coach',
                         };
 
+                        final isLive = state is AiConversationsLoaded &&
+                            state.isSocketConnected;
+
                         return Row(
                           children: [
                             Container(
@@ -120,15 +139,40 @@ class _AiCoachPageViewState extends State<_AiCoachPageView> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    title,
-                                    style: GoogleFonts.figtree(
-                                      color: Colors.white,
-                                      fontSize: 16.sp,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          title,
+                                          style: GoogleFonts.figtree(
+                                            color: Colors.white,
+                                            fontSize: 16.sp,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      SizedBox(width: 6.w),
+                                      Container(
+                                        width: 7,
+                                        height: 7,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: isLive
+                                              ? const Color(0xFF4CAF50)
+                                              : Colors.orangeAccent,
+                                        ),
+                                      ),
+                                      SizedBox(width: 4.w),
+                                      Text(
+                                        isLive ? 'Live' : 'Connecting...',
+                                        style: GoogleFonts.figtree(
+                                          color: Colors.white38,
+                                          fontSize: 10.sp,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   Text(
                                     'Personalized Alignment Guidance',
@@ -168,16 +212,19 @@ class _AiCoachPageViewState extends State<_AiCoachPageView> {
             Expanded(
               child: BlocConsumer<AiConversationsCubit, AiConversationsState>(
                 listener: (context, state) {
-                  if (state is AiConversationsLoaded && !state.isLoadingMessages) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (_scrollController.hasClients) {
-                        _scrollController.animateTo(
-                          _scrollController.position.maxScrollExtent,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeOut,
-                        );
-                      }
-                    });
+                  if (state is AiConversationsLoaded) {
+                    if (state.messagesError != null &&
+                        state.messagesError!.isNotEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(state.messagesError!),
+                          backgroundColor: Colors.redAccent,
+                          duration: const Duration(seconds: 3),
+                        ),
+                      );
+                      context.read<AiConversationsCubit>().clearError();
+                    }
+                    _scrollToBottom();
                   }
                 },
                 builder: (context, state) {
@@ -210,64 +257,46 @@ class _AiCoachPageViewState extends State<_AiCoachPageView> {
                               ),
                             ),
                           )
-                        else if (state.messagesError != null)
-                          Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16.h),
-                            child: Column(
-                              children: [
-                                Text(
-                                  'Failed to load messages: ${state.messagesError}',
-                                  style: GoogleFonts.figtree(
-                                    color: Colors.redAccent,
-                                    fontSize: 13.sp,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                SizedBox(height: 8.h),
-                                TextButton.icon(
-                                  icon: const Icon(
-                                    Icons.refresh,
-                                    color: Color(0xFFD48B3B),
-                                    size: 16,
-                                  ),
-                                  label: Text(
-                                    'Retry',
-                                    style: GoogleFonts.figtree(
-                                      color: const Color(0xFFD48B3B),
-                                    ),
-                                  ),
-                                  onPressed: () {
-                                    if (state.activeConversationId != null) {
-                                      context
-                                          .read<AiConversationsCubit>()
-                                          .fetchMessages(
-                                              state.activeConversationId!);
-                                    }
-                                  },
-                                ),
-                              ],
-                            ),
-                          )
                         else if (state.messages.isNotEmpty)
-                          ...state.messages.map((msg) {
-                            if (msg.isUser) {
-                              return _buildUserBubble(
-                                msg.content,
-                                time: msg.formattedTime,
-                              );
-                            } else {
-                              return _buildAiBubble(
-                                msg.content,
-                                time: msg.formattedTime,
-                              );
+                          ...() {
+                            final unique = <AiMessageModel>[];
+                            final seen = <String>{};
+                            for (final msg in state.messages) {
+                              final key = msg.id.isNotEmpty
+                                  ? msg.id
+                                  : '${msg.role}_${msg.content.trim()}';
+                              if (seen.add(key)) {
+                                unique.add(msg);
+                              }
                             }
-                          })
-                        else if (state.activeConversation != null) ...[
+                            return unique.map((msg) {
+                              if (msg.isUser) {
+                                return _buildUserBubble(
+                                  msg.content,
+                                  time: msg.formattedTime,
+                                );
+                              } else {
+                                return _buildAiBubble(
+                                  msg.content,
+                                  time: msg.formattedTime,
+                                );
+                              }
+                            });
+                          }()
+                        else if (state.activeConversation != null &&
+                            !state.isSending) ...[
                           _buildUserBubble(state.activeConversation!.title),
                           _buildAiBubble(
                             'I understand you\'re experiencing this: "${state.activeConversation!.title}". Let\'s break this down into actionable steps. What triggered this feeling recently?',
                           ),
                         ],
+                        if (state.streamingReply.isNotEmpty)
+                          _buildAiBubble(
+                            state.streamingReply,
+                            isStreaming: true,
+                          )
+                        else if (state.isAiTyping)
+                          _buildTypingIndicator(),
                       ],
                     ],
                   );
@@ -288,8 +317,18 @@ class _AiCoachPageViewState extends State<_AiCoachPageView> {
                           ? state.conversations
                           : <AiConversationModel>[];
 
-                      final chips = items.isNotEmpty
-                          ? items.map((c) => c.title).take(5).toList()
+                      final uniqueChips = <String>[];
+                      final seenChipTitles = <String>{};
+                      for (final item in items) {
+                        final trimmed = item.title.trim();
+                        if (trimmed.isNotEmpty &&
+                            seenChipTitles.add(trimmed.toLowerCase())) {
+                          uniqueChips.add(trimmed);
+                        }
+                      }
+
+                      final chips = uniqueChips.isNotEmpty
+                          ? uniqueChips.take(5).toList()
                           : [
                               'I feel stressed',
                               'Conflict prep',
@@ -303,24 +342,10 @@ class _AiCoachPageViewState extends State<_AiCoachPageView> {
                             return Padding(
                               padding: const EdgeInsets.only(right: 8.0),
                               child: GestureDetector(
-                                onTap: () async {
-                                  _textController.text = chipText;
-                                  if (items.isNotEmpty) {
-                                    try {
-                                      final matched = items.firstWhere(
-                                        (c) =>
-                                            c.title.trim().toLowerCase() ==
-                                            chipText.trim().toLowerCase(),
-                                      );
-                                      context
-                                          .read<AiConversationsCubit>()
-                                          .selectConversation(matched.id);
-                                      return;
-                                    } catch (_) {}
-                                  }
-                                  await context
+                                onTap: () {
+                                  context
                                       .read<AiConversationsCubit>()
-                                      .createConversation(chipText);
+                                      .sendMessage(chipText);
                                 },
                                 child: _buildChip(chipText),
                               ),
@@ -331,36 +356,57 @@ class _AiCoachPageViewState extends State<_AiCoachPageView> {
                     },
                   ),
                   SizedBox(height: 14.h),
-                  CustomTextField(
-                    controller: _textController,
-                    hintText: 'Type your question...',
-                    fillColor: Colors.black.withValues(alpha: 0.5),
-                    fieldBorderColor: Colors.white38,
-                    fieldBorderRadius: 24,
-                    prefixIcon: IconButton(
-                      icon: const Icon(Icons.add, color: Colors.white),
-                      onPressed: () {
-                        _showCreateConversationDialog(context);
-                      },
-                    ),
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.send_outlined, color: Colors.white),
-                      onPressed: () async {
-                        final text = _textController.text.trim();
-                        if (text.isNotEmpty) {
-                          _textController.clear();
-                          final cubit = context.read<AiConversationsCubit>();
-                          final state = cubit.state;
-                          if (state is! AiConversationsLoaded ||
-                              state.activeConversation == null) {
-                            await cubit.createConversation(text);
-                          }
-                        }
-                      },
-                    ),
-                    textStyle: const TextStyle(color: Colors.white),
-                    hintStyle: const TextStyle(color: Colors.white70),
-                    cursorColor: Colors.white,
+                  BlocBuilder<AiConversationsCubit, AiConversationsState>(
+                    builder: (context, state) {
+                      final isSending =
+                          state is AiConversationsLoaded && state.isSending;
+
+                      return CustomTextField(
+                        controller: _textController,
+                        hintText: isSending
+                            ? 'AI is replying...'
+                            : 'Type your question...',
+                        fillColor: Colors.black.withValues(alpha: 0.5),
+                        fieldBorderColor: Colors.white38,
+                        fieldBorderRadius: 24,
+                        prefixIcon: IconButton(
+                          icon: const Icon(Icons.add, color: Colors.white),
+                          onPressed: () {
+                            _showCreateConversationDialog(context);
+                          },
+                        ),
+                        suffixIcon: isSending
+                            ? const Padding(
+                                padding: EdgeInsets.all(12.0),
+                                child: SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Color(0xFFD48B3B),
+                                  ),
+                                ),
+                              )
+                            : IconButton(
+                                icon: const Icon(
+                                  Icons.send_outlined,
+                                  color: Colors.white,
+                                ),
+                                onPressed: () {
+                                  final text = _textController.text.trim();
+                                  if (text.isNotEmpty) {
+                                    _textController.clear();
+                                    context
+                                        .read<AiConversationsCubit>()
+                                        .sendMessage(text);
+                                  }
+                                },
+                              ),
+                        textStyle: const TextStyle(color: Colors.white),
+                        hintStyle: const TextStyle(color: Colors.white70),
+                        cursorColor: Colors.white,
+                      );
+                    },
                   ),
                   SizedBox(height: 6.h),
                 ],
@@ -467,7 +513,7 @@ class _AiCoachPageViewState extends State<_AiCoachPageView> {
                             SizedBox(height: 12.h),
                             Text(
                               state.message.isNotEmpty
-                                  ? state.message
+                                   ? state.message
                                   : 'Failed to load conversations',
                               style: GoogleFonts.figtree(
                                 color: Colors.white70,
@@ -622,7 +668,7 @@ class _AiCoachPageViewState extends State<_AiCoachPageView> {
                       ],
                     ),
                   ),
-                  if (isActive)
+                  if (isActive) ...[
                     Container(
                       width: 8,
                       height: 8,
@@ -631,6 +677,20 @@ class _AiCoachPageViewState extends State<_AiCoachPageView> {
                         shape: BoxShape.circle,
                       ),
                     ),
+                    SizedBox(width: 8.w),
+                  ],
+                  IconButton(
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      size: 20,
+                      color: Colors.white38,
+                    ),
+                    splashRadius: 18,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    tooltip: 'Delete',
+                    onPressed: () => _confirmDeleteConversation(context, item),
+                  ),
                 ],
               ),
             ),
@@ -640,14 +700,70 @@ class _AiCoachPageViewState extends State<_AiCoachPageView> {
     );
   }
 
-  Widget _buildAiBubble(String text, {String? time}) {
+  Widget _buildTypingIndicator() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: EdgeInsets.only(bottom: 16.h),
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+        decoration: BoxDecoration(
+          color: const Color(0xFF261911),
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(
+            color: const Color(0xFFD48B3B).withValues(alpha: 0.4),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFD48B3B).withValues(alpha: 0.2),
+              ),
+              child: const Icon(
+                Icons.auto_awesome,
+                color: Color(0xFFD48B3B),
+                size: 14,
+              ),
+            ),
+            SizedBox(width: 8.w),
+            Text(
+              'AI Coach is typing...',
+              style: GoogleFonts.figtree(
+                color: const Color(0xFFD48B3B),
+                fontSize: 13.sp,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            SizedBox(width: 8.w),
+            const SizedBox(
+              width: 12,
+              height: 12,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Color(0xFFD48B3B),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAiBubble(String text, {String? time, bool isStreaming = false}) {
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
       padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: const Color(0xFF261911),
         borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: Colors.white24),
+        border: Border.all(
+          color: isStreaming
+              ? const Color(0xFFD48B3B).withValues(alpha: 0.6)
+              : Colors.white24,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -676,7 +792,23 @@ class _AiCoachPageViewState extends State<_AiCoachPageView> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              if (time != null && time.isNotEmpty) ...[
+              if (isStreaming) ...[
+                SizedBox(width: 8.w),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD48B3B).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Text(
+                    'Generating...',
+                    style: GoogleFonts.figtree(
+                      color: const Color(0xFFD48B3B),
+                      fontSize: 10.sp,
+                    ),
+                  ),
+                ),
+              ] else if (time != null && time.isNotEmpty) ...[
                 SizedBox(width: 8.w),
                 Text(
                   time,
@@ -689,12 +821,27 @@ class _AiCoachPageViewState extends State<_AiCoachPageView> {
             ],
           ),
           SizedBox(height: 10.h),
-          SelectableText(
-            text,
-            style: GoogleFonts.figtree(
-              color: Colors.white.withValues(alpha: 0.95),
-              fontSize: 14.sp,
-              height: 1.45,
+          SelectableText.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: text,
+                  style: GoogleFonts.figtree(
+                    color: Colors.white.withValues(alpha: 0.95),
+                    fontSize: 14.sp,
+                    height: 1.45,
+                  ),
+                ),
+                if (isStreaming)
+                  TextSpan(
+                    text: ' ▋',
+                    style: GoogleFonts.figtree(
+                      color: const Color(0xFFD48B3B),
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+              ],
             ),
           ),
         ],
@@ -912,7 +1059,7 @@ class _AiCoachPageViewState extends State<_AiCoachPageView> {
                           if (created != null) {
                             if (_scaffoldKey.currentState?.isEndDrawerOpen ??
                                 false) {
-                              Navigator.pop(context);
+                              _scaffoldKey.currentState?.closeEndDrawer();
                             }
                           } else {
                             if (context.mounted) {
@@ -944,6 +1091,158 @@ class _AiCoachPageViewState extends State<_AiCoachPageView> {
                         ),
                 ),
               ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _confirmDeleteConversation(
+    BuildContext context,
+    AiConversationModel item,
+  ) {
+    final cubit = context.read<AiConversationsCubit>();
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        bool isDeleting = false;
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E140F),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: const Color(0xFFD48B3B).withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.redAccent.withValues(alpha: 0.15),
+                          ),
+                          child: const Icon(
+                            Icons.delete_outline,
+                            color: Colors.redAccent,
+                            size: 20,
+                          ),
+                        ),
+                        SizedBox(width: 10.w),
+                        Text(
+                          'Delete Conversation',
+                          style: GoogleFonts.figtree(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 14.h),
+                    Text(
+                      'Are you sure you want to delete "${item.title.isNotEmpty ? item.title : 'this conversation'}"? This conversation history cannot be recovered.',
+                      style: GoogleFonts.figtree(
+                        color: Colors.white70,
+                        fontSize: 13.sp,
+                        height: 1.4,
+                      ),
+                    ),
+                    SizedBox(height: 24.h),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white12,
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            child: TextButton(
+                              onPressed: isDeleting
+                                  ? null
+                                  : () => Navigator.pop(dialogCtx),
+                              child: Text(
+                                'Cancel',
+                                style: GoogleFonts.figtree(
+                                  color: Colors.white70,
+                                  fontSize: 14.sp,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 12.w),
+                        Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent,
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            child: TextButton(
+                              onPressed: isDeleting
+                                  ? null
+                                  : () async {
+                                      setDialogState(() {
+                                        isDeleting = true;
+                                      });
+                                      final success = await cubit
+                                          .deleteConversation(item.id);
+                                      if (dialogCtx.mounted) {
+                                        Navigator.pop(dialogCtx);
+                                      }
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              success
+                                                  ? 'Conversation deleted successfully'
+                                                  : 'Failed to delete conversation',
+                                            ),
+                                            backgroundColor: success
+                                                ? const Color(0xFF2C1E11)
+                                                : Colors.redAccent,
+                                            behavior:
+                                                SnackBarBehavior.floating,
+                                          ),
+                                        );
+                                      }
+                                    },
+                              child: isDeleting
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Text(
+                                      'Delete',
+                                      style: GoogleFonts.figtree(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14.sp,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             );
           },
         );

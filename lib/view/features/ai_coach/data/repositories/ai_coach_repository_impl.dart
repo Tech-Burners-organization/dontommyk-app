@@ -48,5 +48,33 @@ class AiCoachRepositoryImpl implements AiCoachRepository {
       return ResultFailure(FailureMapper.from(e));
     }
   }
+
+  @override
+  Future<Result<AiMessageModel>> sendRestMessage({
+    required String conversationId,
+    required String content,
+  }) async {
+    try {
+      final message = await remoteDataSource.sendRestMessage(
+        conversationId: conversationId,
+        content: content,
+      );
+      return ResultSuccess(message);
+    } catch (e, st) {
+      debugPrint('AiCoachRepositoryImpl.sendRestMessage error: $e\n$st');
+      return ResultFailure(FailureMapper.from(e));
+    }
+  }
+
+  @override
+  Future<Result<void>> deleteConversation(String conversationId) async {
+    try {
+      await remoteDataSource.deleteConversation(conversationId);
+      return const ResultSuccess(null);
+    } catch (e, st) {
+      debugPrint('AiCoachRepositoryImpl.deleteConversation error: $e\n$st');
+      return ResultFailure(FailureMapper.from(e));
+    }
+  }
 }
 

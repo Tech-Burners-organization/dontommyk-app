@@ -6,5 +6,10 @@ abstract class AiCoachRepository {
   Future<Result<List<AiConversationModel>>> getConversations();
   Future<Result<AiConversationModel>> createConversation({required String title});
   Future<Result<List<AiMessageModel>>> getMessages(String conversationId);
+  Future<Result<AiMessageModel>> sendRestMessage({
+    required String conversationId,
+    required String content,
+  });
+  Future<Result<void>> deleteConversation(String conversationId);
 }
 

@@ -1,6 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:tommy/core/constant/app_icon.dart';
+import 'package:tommy/view/features/ai_coach/data/datasources/ai_coach_socket_service.dart';
+import 'package:tommy/view/features/home/presentation/bloc/home_bloc.dart';
+import 'package:tommy/view/features/home/presentation/bloc/home_event.dart';
 import 'package:tommy/view/features/home/presentation/pages/home_page.dart';
 import 'package:tommy/view/features/ai_coach/presentation/pages/ai_coach_page.dart';
 import 'package:tommy/view/features/progress/presentation/pages/progress_page.dart';
@@ -15,6 +20,7 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   int _currentIndex = 0;
+  StreamSubscription<AiCoachNotificationData>? _notificationSub;
 
   final List<Widget> _pages = [
     const HomePage(),
@@ -22,6 +28,26 @@ class _DashboardPageState extends State<DashboardPage> {
     const ProgressPage(),
     const ProfilePage(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    AiCoachSocketService().connect();
+    _notificationSub =
+        AiCoachSocketService().onNotification.listen((notification) {
+      if (notification.title == 'Assessment Reviewed') {
+        if (mounted) {
+          context.read<HomeBloc>().add(const FetchHomeDataEvent());
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _notificationSub?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
