@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:tommy/core/network/api_service.dart';
+import 'package:tommy/core/utils/prefs_helper.dart';
 import 'package:tommy/view/features/profile/data/models/employee_profile_model.dart';
 
 import 'package:tommy/view/features/profile/data/models/legal_content_model.dart';
@@ -14,6 +16,7 @@ abstract class ProfileRemoteDataSource {
     int? age,
     String? location,
     String? imagePath,
+    String? token,
   });
 
   Future<LegalContentModel> getLegalContent(String slug);
@@ -52,14 +55,38 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     int? age,
     String? location,
     String? imagePath,
+    String? token,
   }) async {
     final profileData = <String, dynamic>{
       'firstName': firstName,
       'lastName': lastName,
       'designation': designation,
-      if (age != null) 'age': age,
+      'age': ?age,
       if (location != null && location.isNotEmpty) 'location': location,
     };
+
+    var tokenToUse = (token != null && token.isNotEmpty)
+        ? token.trim()
+        : PrefsHelper.token.trim();
+    if (tokenToUse.isEmpty) {
+      tokenToUse = (await PrefsHelper.getString('token')).trim();
+    }
+
+    final cleanToken = tokenToUse
+        .replaceFirst(RegExp(r'^Bearer\s+', caseSensitive: false), '')
+        .trim();
+
+    final headers = <String, dynamic>{
+      'Content-Type': 'multipart/form-data',
+      if (cleanToken.isNotEmpty) 'Authorization': 'Bearer $cleanToken',
+    };
+
+    debugPrint('====================================');
+    debugPrint('[UpdateProfile] Sending Multipart Request: PATCH /employees/profile');
+    debugPrint('[UpdateProfile] Token: ${cleanToken.isNotEmpty ? (cleanToken.length > 25 ? "${cleanToken.substring(0, 25)}..." : cleanToken) : "EMPTY!"}');
+    debugPrint('[UpdateProfile] Headers: $headers');
+    debugPrint('[UpdateProfile] ProfileData: $profileData');
+    debugPrint('====================================');
 
     final fields = <String, dynamic>{
       'data': jsonEncode(profileData),
@@ -76,9 +103,9 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       fields,
       multipartBody: multipartList,
       method: 'PATCH',
+      headers: headers,
       decoder: (json) => EmployeeProfile.fromJson(json as Map<String, dynamic>),
     );
-
     return response.data;
   }
 

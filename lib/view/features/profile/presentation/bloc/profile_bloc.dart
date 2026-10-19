@@ -56,6 +56,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         age: event.age,
         location: event.location,
         imagePath: event.imagePath,
+        token: event.token,
       ),
     );
 

@@ -141,7 +141,6 @@ class ApiService {
         options: Options(
           method: method,
           headers: headers,
-          contentType: Headers.multipartFormDataContentType,
         ),
         onSendProgress: onSendProgress,
         cancelToken: cancelToken,

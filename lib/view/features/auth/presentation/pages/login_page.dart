@@ -187,7 +187,23 @@ class _LoginPageState extends State<LoginPage> {
                       isInitialAssessmentCompleted:
                           onboarding.isInitialAssessmentCompleted,
                     );
-                    Navigator.pushReplacementNamed(context, nextRoute);
+                    debugPrint('[Login] Success! AccessToken length: ${state.loginData.accessToken.length}, NextRoute: $nextRoute');
+                    Navigator.pushReplacementNamed(
+                      context,
+                      nextRoute,
+                      arguments: state.loginData.accessToken,
+                    );
+                  } else if (state is AuthNeedsVerification) {
+                    showAppSnackBar(
+                      context,
+                      message: state.message,
+                      isSuccess: false,
+                    );
+                    Navigator.pushNamed(
+                      context,
+                      AppRoute.signUpVerification,
+                      arguments: state.email,
+                    );
                   } else if (state is AuthFailure) {
                     showAppSnackBar(
                       context,

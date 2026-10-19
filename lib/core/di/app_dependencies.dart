@@ -57,12 +57,15 @@ class AppDependencies {
     );
 
     dio.interceptors.add(
-      AuthInterceptor(tokenProvider: () => PrefsHelper.token),
+      AuthInterceptor(tokenProvider: () async {
+        if (PrefsHelper.token.isNotEmpty) return PrefsHelper.token;
+        return await PrefsHelper.getString('token');
+      }),
     );
     if (kDebugMode) {
       dio.interceptors.add(
         LogInterceptor(
-          requestHeader: false,
+          requestHeader: true,
           responseHeader: false,
           requestBody: true,
           responseBody: true,

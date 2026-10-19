@@ -12,6 +12,7 @@ abstract class ProfileRepository {
     int? age,
     String? location,
     String? imagePath,
+    String? token,
   });
 
   Future<Result<LegalContentModel>> getLegalContent(String slug);

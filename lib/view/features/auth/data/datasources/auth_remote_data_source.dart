@@ -16,6 +16,7 @@ abstract class AuthRemoteDataSource {
     required String newPassword,
     required String confirmPassword,
   });
+  Future<Map<String, dynamic>?> getEmployeeProfileStatus();
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -59,11 +60,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         'OTP': otpValue,
       },
       decoder: (json) {
-        if (json is Map<String, dynamic>) {
+        if (json is Map) {
           final data = json['data'];
-          if (data is Map<String, dynamic>) {
-            return data['accessToken']?.toString() ?? '';
+          if (data is Map) {
+            final t = data['accessToken'] ?? data['token'] ?? data['access_token'];
+            if (t != null) return t.toString();
           }
+          if (data is String && data.isNotEmpty) return data;
+          final rootToken = json['accessToken'] ?? json['token'] ?? json['access_token'];
+          if (rootToken != null) return rootToken.toString();
         }
         return '';
       },
@@ -121,5 +126,31 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       decoder: (json) => json as Map<String, dynamic>,
     );
     return response.message ?? 'Your password has been successfully changed';
+  }
+
+  @override
+  Future<Map<String, dynamic>?> getEmployeeProfileStatus() async {
+    try {
+      final response = await apiService.getData<Map<String, dynamic>>(
+        '/employees/profile',
+        decoder: (json) {
+          if (json is Map<String, dynamic>) {
+            return json;
+          }
+          if (json is Map) {
+            return json.map((key, value) => MapEntry(key.toString(), value));
+          }
+          return <String, dynamic>{};
+        },
+      );
+      final raw = response.data;
+      if (raw.containsKey('data') && raw['data'] is Map) {
+        final inner = raw['data'] as Map;
+        return inner.map((key, value) => MapEntry(key.toString(), value));
+      }
+      return raw;
+    } catch (_) {
+      return null;
+    }
   }
 }

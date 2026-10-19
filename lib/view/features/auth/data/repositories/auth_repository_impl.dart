@@ -14,18 +14,16 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Result<LoginData>> login(String email, String password) async {
     try {
-      final loginData = await remoteDataSource.login(email, password);
+      var loginData = await remoteDataSource.login(email, password);
+      if (loginData.needsVerification) {
+        return ResultSuccess(loginData);
+      }
+
       await PrefsHelper.setString('token', loginData.accessToken);
       await PrefsHelper.setString('refreshToken', loginData.refreshToken);
       if (loginData.role.isNotEmpty) {
         await PrefsHelper.setString('role', loginData.role);
       }
-      await PrefsHelper.setProfileCompleted(
-        loginData.onboarding.isProfileCompleted,
-      );
-      await PrefsHelper.setInitialAssessmentCompleted(
-        loginData.onboarding.isInitialAssessmentCompleted,
-      );
 
       try {
         final parts = loginData.accessToken.split('.');
@@ -45,6 +43,49 @@ class AuthRepositoryImpl implements AuthRepository {
           }
         }
       } catch (_) {}
+
+      // Verify real onboarding status from server
+      var onboarding = loginData.onboarding;
+      if (!onboarding.isProfileCompleted || !onboarding.isInitialAssessmentCompleted) {
+        final profileData = await remoteDataSource.getEmployeeProfileStatus();
+        if (profileData != null) {
+          final rawOnboarding = profileData['onboarding'];
+          final isProfileCompleted = profileData['isProfileCompleted'] as bool? ??
+              (rawOnboarding is Map ? rawOnboarding['isProfileCompleted'] as bool? : null) ??
+              false;
+          final isInitialAssessmentCompleted =
+              (rawOnboarding is Map ? rawOnboarding['isInitialAssessmentCompleted'] as bool? : null) ??
+              false;
+
+          onboarding = OnboardingInfo(
+            isProfileCompleted: isProfileCompleted,
+            isInitialAssessmentCompleted: isInitialAssessmentCompleted,
+          );
+          loginData = loginData.copyWith(onboarding: onboarding);
+
+          final firstName = profileData['firstName']?.toString() ?? '';
+          final lastName = profileData['lastName']?.toString() ?? '';
+          final fullName = '$firstName $lastName'.trim();
+          if (fullName.isNotEmpty) {
+            await PrefsHelper.setString('name', fullName);
+          }
+          final designation = profileData['designation']?.toString() ?? '';
+          if (designation.isNotEmpty) {
+            await PrefsHelper.setString('role', designation);
+          }
+          final profilePhoto = profileData['profilePhoto']?.toString() ?? '';
+          if (profilePhoto.isNotEmpty) {
+            await PrefsHelper.setString('profileImage', profilePhoto);
+          }
+        }
+      }
+
+      await PrefsHelper.setProfileCompleted(
+        onboarding.isProfileCompleted,
+      );
+      await PrefsHelper.setInitialAssessmentCompleted(
+        onboarding.isInitialAssessmentCompleted,
+      );
 
       return ResultSuccess(loginData);
     } catch (e) {

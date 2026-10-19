@@ -72,8 +72,12 @@ class ProfileRepositoryImpl implements ProfileRepository {
     int? age,
     String? location,
     String? imagePath,
+    String? token,
   }) async {
     try {
+      if (token != null && token.isNotEmpty) {
+        await PrefsHelper.setString('token', token);
+      }
       final profile = await remoteDataSource.updateProfile(
         firstName: firstName,
         lastName: lastName,
@@ -81,6 +85,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
         age: age,
         location: location,
         imagePath: imagePath,
+        token: token,
       );
 
       // Cache updated values in PrefsHelper

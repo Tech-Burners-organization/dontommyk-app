@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tommy/core/utils/prefs_helper.dart';
 import 'package:tommy/view/features/auth/domain/repositories/auth_repository.dart';
 import 'package:tommy/view/features/auth/domain/usecases/change_password_usecase.dart';
 import 'package:tommy/view/features/auth/domain/usecases/forgot_password_usecase.dart';
@@ -138,12 +139,13 @@ abstract final class AppRoute {
       profileSetup => MaterialPageRoute<void>(
         settings: settings,
         builder: (context) {
+          final token = (settings.arguments as String?) ?? PrefsHelper.token;
           final repo = context.read<ProfileRepository>();
           return BlocProvider(
             create: (_) => ProfileBloc(
               updateProfileUseCase: UpdateProfileUseCase(repo),
             ),
-            child: const ProfileSetupPage(),
+            child: ProfileSetupPage(token: token),
           );
         },
       ),

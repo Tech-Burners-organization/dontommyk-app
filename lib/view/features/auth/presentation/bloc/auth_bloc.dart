@@ -69,7 +69,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     switch (result) {
       case ResultSuccess(data: final loginData):
-        emit(AuthSuccess(loginData));
+        if (loginData.needsVerification) {
+          emit(AuthNeedsVerification(
+            email: loginData.email.isNotEmpty ? loginData.email : event.email,
+            message: loginData.message.isNotEmpty
+                ? loginData.message
+                : 'Please verify your account, check your email we send a code',
+          ));
+        } else {
+          emit(AuthSuccess(loginData));
+        }
       case ResultFailure(failure: final failure):
         emit(AuthFailure(failure.message));
     }

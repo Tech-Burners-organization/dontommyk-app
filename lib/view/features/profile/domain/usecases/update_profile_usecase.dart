@@ -11,6 +11,7 @@ class UpdateProfileParams extends Equatable {
   final int? age;
   final String? location;
   final String? imagePath;
+  final String? token;
 
   const UpdateProfileParams({
     required this.firstName,
@@ -19,6 +20,7 @@ class UpdateProfileParams extends Equatable {
     this.age,
     this.location,
     this.imagePath,
+    this.token,
   });
 
   @override
@@ -29,6 +31,7 @@ class UpdateProfileParams extends Equatable {
     age,
     location,
     imagePath,
+    token,
   ];
 }
 
@@ -47,6 +50,7 @@ class UpdateProfileUseCase
       age: params.age,
       location: params.location,
       imagePath: params.imagePath,
+      token: params.token,
     );
   }
 }

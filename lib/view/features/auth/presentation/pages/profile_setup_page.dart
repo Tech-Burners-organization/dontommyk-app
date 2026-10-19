@@ -15,7 +15,9 @@ import 'package:tommy/core/utils/prefs_helper.dart';
 import 'package:tommy/view/features/profile/presentation/bloc/profile_bloc.dart';
 
 class ProfileSetupPage extends StatefulWidget {
-  const ProfileSetupPage({super.key});
+  final String? token;
+
+  const ProfileSetupPage({super.key, this.token});
 
   @override
   State<ProfileSetupPage> createState() => _ProfileSetupPageState();
@@ -50,7 +52,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     }
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final name = _nameController.text.trim();
     final role = _roleController.text.trim();
 
@@ -76,21 +78,42 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     final firstName = parts.isNotEmpty ? parts.first : '';
     final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
 
-    context.read<ProfileBloc>().add(
-      UpdateProfileSubmitted(
-        firstName: firstName,
-        lastName: lastName,
-        designation: role,
-        imagePath: _selectedImagePath,
-      ),
-    );
+    var effectiveToken = (widget.token != null && widget.token!.isNotEmpty)
+        ? widget.token!
+        : PrefsHelper.token;
+    if (effectiveToken.isEmpty) {
+      effectiveToken = await PrefsHelper.getString('token');
+    }
+
+    if (effectiveToken.isEmpty) {
+      if (mounted) {
+        showAppSnackBar(
+          context,
+          message: 'Session not found. Please log in again.',
+          isSuccess: false,
+        );
+        Navigator.pushReplacementNamed(context, AppRoute.login);
+      }
+      return;
+    }
+
+    if (mounted) {
+      context.read<ProfileBloc>().add(
+        UpdateProfileSubmitted(
+          firstName: firstName,
+          lastName: lastName,
+          designation: role,
+          imagePath: _selectedImagePath,
+          token: effectiveToken,
+        ),
+      );
+    }
   }
 
   void _skip() {
-    final nextRoute = AppRoute.getOnboardingNextRoute(
-      isProfileCompleted: PrefsHelper.isProfileCompleted,
-      isInitialAssessmentCompleted: PrefsHelper.isInitialAssessmentCompleted,
-    );
+    final nextRoute = PrefsHelper.isInitialAssessmentCompleted
+        ? AppRoute.home
+        : AppRoute.assessment;
     Navigator.pushReplacementNamed(context, nextRoute);
   }
 

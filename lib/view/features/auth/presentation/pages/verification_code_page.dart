@@ -38,8 +38,7 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
   @override
   void initState() {
     super.initState();
-    // Default to test OTP 7705 in debug mode if desired
-    final defaultDigits = kDebugMode ? ['7', '7', '0', '5'] : ['', '', '', ''];
+    final defaultDigits = ['', '', '', ''];
     _controllers = List.generate(
       4,
       (index) => TextEditingController(text: defaultDigits[index]),
@@ -91,6 +90,14 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
   }
 
   void _submit(String email) {
+    if (email.trim().isEmpty) {
+      showAppSnackBar(
+        context,
+        message: 'Email address is missing.',
+        isSuccess: false,
+      );
+      return;
+    }
     final otp = _getOtp();
     if (otp.length < 4) {
       showAppSnackBar(
@@ -102,15 +109,16 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
     }
 
     context.read<AuthBloc>().add(
-      VerifyEmailSubmitted(email: email, otp: otp),
+      VerifyEmailSubmitted(email: email.trim(), otp: otp),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final effectiveEmail = widget.email ??
-        (ModalRoute.of(context)?.settings.arguments as String?) ??
-        '';
+    final routeArg = ModalRoute.of(context)?.settings.arguments as String?;
+    final effectiveEmail = (widget.email != null && widget.email!.isNotEmpty)
+        ? widget.email!
+        : (routeArg ?? '');
 
     return Scaffold(
       body: AppBackground(
@@ -246,7 +254,11 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
                           );
                           break;
                         case VerificationPurpose.signUp:
-                          Navigator.pushNamed(context, AppRoute.profileSetup);
+                          Navigator.pushReplacementNamed(
+                            context,
+                            AppRoute.profileSetup,
+                            arguments: state.token,
+                          );
                           break;
                       }
                     } else if (state is ResendOtpSuccess) {

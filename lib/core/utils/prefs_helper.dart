@@ -4,7 +4,16 @@ abstract final class PrefsHelper {
   static late SharedPreferences _preferences;
   static bool _initialized = false;
 
-  static String token = '';
+  static String _token = '';
+  static String get token {
+    if (_token.isNotEmpty) return _token;
+    if (_initialized) {
+      return _preferences.getString('token') ?? '';
+    }
+    return '';
+  }
+  static set token(String value) => _token = value;
+
   static String role = '';
   static String phone = '';
   static String name = '';
@@ -29,7 +38,7 @@ abstract final class PrefsHelper {
 
   static void _loadCachedValues() {
     role = _preferences.getString('role') ?? '';
-    token = _preferences.getString('token') ?? '';
+    _token = _preferences.getString('token') ?? '';
     phone = _preferences.getString('phoneNumber') ?? '';
     name = _preferences.getString('name') ?? '';
     profileImage = _preferences.getString('profileImage') ?? '';
@@ -69,6 +78,9 @@ abstract final class PrefsHelper {
   }
 
   static Future<void> setString(String key, String? value) async {
+    if (key == 'token') {
+      token = value ?? '';
+    }
     await _ensureInitialized();
     await _preferences.setString(key, value ?? '');
     _loadCachedValues();

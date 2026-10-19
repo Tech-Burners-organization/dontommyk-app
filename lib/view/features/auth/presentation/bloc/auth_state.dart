@@ -20,6 +20,19 @@ final class AuthSuccess extends AuthState {
   List<Object?> get props => [loginData];
 }
 
+final class AuthNeedsVerification extends AuthState {
+  final String email;
+  final String message;
+
+  const AuthNeedsVerification({
+    required this.email,
+    required this.message,
+  });
+
+  @override
+  List<Object?> get props => [email, message];
+}
+
 final class ForgotPasswordSuccess extends AuthState {
   final String message;
 

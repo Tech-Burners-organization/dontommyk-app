@@ -18,6 +18,7 @@ class UpdateProfileSubmitted extends ProfileEvent {
   final int? age;
   final String? location;
   final String? imagePath;
+  final String? token;
 
   const UpdateProfileSubmitted({
     required this.firstName,
@@ -26,6 +27,7 @@ class UpdateProfileSubmitted extends ProfileEvent {
     this.age,
     this.location,
     this.imagePath,
+    this.token,
   });
 
   @override
@@ -36,6 +38,7 @@ class UpdateProfileSubmitted extends ProfileEvent {
     age,
     location,
     imagePath,
+    token,
   ];
 }
 

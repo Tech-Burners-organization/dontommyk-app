@@ -23,7 +23,11 @@ class _SplashPageState extends State<SplashPage> {
             isInitialAssessmentCompleted:
                 PrefsHelper.isInitialAssessmentCompleted,
           );
-          Navigator.pushReplacementNamed(context, nextRoute);
+          Navigator.pushReplacementNamed(
+            context,
+            nextRoute,
+            arguments: PrefsHelper.token,
+          );
         } else {
           Navigator.pushReplacementNamed(context, AppRoute.welcome);
         }
