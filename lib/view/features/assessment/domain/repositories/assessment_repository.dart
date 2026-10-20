@@ -10,6 +10,11 @@ abstract class AssessmentRepository {
     required String benchmarkId,
     required List<AssessmentAnswer> answers,
   });
+  Future<Result<AiAssessmentResponse>> getAiAssessment(String assessmentId);
+  Future<Result<String>> submitAiAssessment({
+    required String assessmentId,
+    required List<AssessmentAnswer> answers,
+  });
   Future<Result<List<AssessmentHistoryItemModel>>> getAssessmentHistory();
   Future<Result<AssessmentDetailModel>> getAssessmentDetail(String assessmentId);
 }

@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:tommy/core/network/api_service.dart';
 import 'package:tommy/view/features/assessment/data/models/assessment_detail_model.dart';
 import 'package:tommy/view/features/assessment/data/models/assessment_history_model.dart';
@@ -8,6 +10,11 @@ abstract class AssessmentRemoteDataSource {
   Future<String> submitInitialAssessment({
     required String assessmentId,
     required String benchmarkId,
+    required List<AssessmentAnswer> answers,
+  });
+  Future<AiAssessmentResponse> getAiAssessment(String assessmentId);
+  Future<String> submitAiAssessment({
+    required String assessmentId,
     required List<AssessmentAnswer> answers,
   });
   Future<List<AssessmentHistoryItemModel>> getAssessmentHistory();
@@ -50,6 +57,76 @@ class AssessmentRemoteDataSourceImpl implements AssessmentRemoteDataSource {
     );
 
     return response.message ?? 'Assessment submitted successfully.';
+  }
+
+  @override
+  Future<AiAssessmentResponse> getAiAssessment(String assessmentId) async {
+    final practicePlanPath =
+        '/ai-feedback/me/practice-plan/$assessmentId/questions';
+    try {
+      debugPrint('[GetAiAssessment] Requesting: GET $practicePlanPath');
+      final response = await apiService.getData<AiAssessmentResponse>(
+        practicePlanPath,
+        decoder: (json) => AiAssessmentResponse.fromJson(
+          json as Map<String, dynamic>,
+        ),
+      );
+      return response.data;
+    } catch (e) {
+      debugPrint(
+          '[GetAiAssessment] $practicePlanPath failed: $e. Trying fallback /assessments/ai/$assessmentId...');
+      final fallbackPath = '/assessments/ai/$assessmentId';
+      final response = await apiService.getData<AiAssessmentResponse>(
+        fallbackPath,
+        decoder: (json) => AiAssessmentResponse.fromJson(
+          json as Map<String, dynamic>,
+        ),
+      );
+      return response.data;
+    }
+  }
+
+  @override
+  Future<String> submitAiAssessment({
+    required String assessmentId,
+    required List<AssessmentAnswer> answers,
+  }) async {
+    final body = {
+      'answers': answers.map((a) => a.toJson()).toList(),
+    };
+
+    final encoder = const JsonEncoder.withIndent('  ');
+    final formattedBody = encoder.convert(body);
+
+    debugPrint('====================================');
+    debugPrint('[SubmitAiAssessment] Target ID: $assessmentId');
+    debugPrint('[SubmitAiAssessment] Total Answers: ${answers.length}');
+    debugPrint('[SubmitAiAssessment] Request Body:\n$formattedBody');
+    debugPrint('====================================');
+
+    // 1. Practice plan submit endpoint from Postman:
+    // POST /ai-feedback/me/practice-plan/:task_id/submit
+    final practicePlanPath =
+        '/ai-feedback/me/practice-plan/$assessmentId/submit';
+    try {
+      debugPrint('[SubmitAiAssessment] Attempting: POST $practicePlanPath');
+      final response = await apiService.postData<Map<String, dynamic>>(
+        practicePlanPath,
+        body,
+        decoder: (json) => json as Map<String, dynamic>,
+      );
+      return response.message ?? 'Assessment submitted successfully.';
+    } catch (e) {
+      debugPrint(
+          '[SubmitAiAssessment] $practicePlanPath failed: $e. Falling back to /assessments/$assessmentId/submit-ai...');
+      final fallbackPath = '/assessments/$assessmentId/submit-ai';
+      final response = await apiService.postData<Map<String, dynamic>>(
+        fallbackPath,
+        body,
+        decoder: (json) => json as Map<String, dynamic>,
+      );
+      return response.message ?? 'Assessment submitted successfully.';
+    }
   }
 
   @override

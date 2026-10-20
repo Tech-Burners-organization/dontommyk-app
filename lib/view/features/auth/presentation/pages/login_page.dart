@@ -22,10 +22,10 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController(
-    text: kDebugMode ? "mirza.eee.4th@gmail.com" : "",
+    text: kDebugMode ? "topupremium3317@gmail.com" : "",
   );
   final _passwordController = TextEditingController(
-    text: kDebugMode ? "Mirza123@" : "",
+    text: kDebugMode ? "Topu123@" : "",
   );
 
   @override

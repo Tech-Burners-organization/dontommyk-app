@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:tommy/route/app_route.dart';
 import 'package:tommy/view/component/background/app_background.dart';
 import 'package:tommy/view/component/common_button/common_button.dart';
 import 'package:tommy/view/component/common_text/common_text.dart';
+import 'package:tommy/view/component/custom_snacbar.dart';
 import 'package:tommy/view/features/home/data/models/home_data_model.dart';
 import 'package:tommy/view/features/home/presentation/bloc/home_bloc.dart';
 import 'package:tommy/view/features/home/presentation/bloc/home_event.dart';
@@ -88,7 +90,7 @@ class HomePage extends StatelessWidget {
                         SizedBox(height: 20.h),
                         _buildCategoryScores(data.scores),
                         SizedBox(height: 28.h),
-                        _buildTodayPlan(data.todayPlan),
+                        _buildTodayPlan(context, data),
                         SizedBox(height: 32.h),
                       ],
                     ),
@@ -335,9 +337,12 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildTodayPlan(HomeTodayPlanModel todayPlan) {
-    final progress = todayPlan.totalCount > 0
-        ? (todayPlan.completedCount / todayPlan.totalCount).clamp(0.0, 1.0)
+  Widget _buildTodayPlan(BuildContext context, HomeDataModel data) {
+    final todayPlan = data.todayPlan;
+    final completedCount = todayPlan.calculatedCompletedCount;
+    final totalCount = todayPlan.calculatedTotalCount;
+    final progress = totalCount > 0
+        ? (completedCount / totalCount).clamp(0.0, 1.0)
         : 0.0;
 
     return Column(
@@ -354,7 +359,7 @@ class HomePage extends StatelessWidget {
             ),
             RichText(
               text: TextSpan(
-                text: '${todayPlan.completedCount}/${todayPlan.totalCount} ',
+                text: '$completedCount/$totalCount ',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,
@@ -401,10 +406,9 @@ class HomePage extends StatelessWidget {
         else
           ...todayPlan.tasks.map(
             (task) => _buildTaskTile(
-              title: task.title,
-              category: _formatCategory(task.category),
-              categoryColor: _getCategoryColor(task.category),
-              isDone: task.completed,
+              context: context,
+              task: task,
+              data: data,
             ),
           ),
       ],
@@ -436,11 +440,14 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _buildTaskTile({
-    required String title,
-    required String category,
-    required Color categoryColor,
-    bool isDone = false,
+    required BuildContext context,
+    required HomeTaskModel task,
+    required HomeDataModel data,
   }) {
+    final isDone = task.completed;
+    final categoryColor = _getCategoryColor(task.category);
+    final category = _formatCategory(task.category);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -475,7 +482,7 @@ class HomePage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 CommonText(
-                  text: title,
+                  text: task.title,
                   color: Colors.white,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -486,26 +493,56 @@ class HomePage extends StatelessWidget {
             ),
           ),
           if (!isDone)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFF382312),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                children: [
-                  const CommonText(
-                    text: 'Start',
-                    color: Color(0xFFD48B3B),
-                    fontSize: 12,
-                  ),
-                  SizedBox(width: 4.w),
-                  const Icon(
-                    Icons.chevron_right,
-                    color: Color(0xFFD48B3B),
-                    size: 14,
-                  ),
-                ],
+            GestureDetector(
+              onTap: () async {
+                final targetId = task.id.isNotEmpty
+                    ? task.id
+                    : ((task.assessmentId != null &&
+                            task.assessmentId!.isNotEmpty)
+                        ? task.assessmentId!
+                        : (data.nextAssessment?.assessmentId ?? ''));
+
+                if (targetId.trim().isEmpty) {
+                  showAppSnackBar(
+                    context,
+                    message: 'Task / Assessment ID not found.',
+                    isSuccess: false,
+                  );
+                  return;
+                }
+
+                final result = await Navigator.pushNamed(
+                  context,
+                  AppRoute.aiAssessment,
+                  arguments: targetId,
+                );
+
+                if (result == true && context.mounted) {
+                  context.read<HomeBloc>().add(const FetchHomeDataEvent());
+                }
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF382312),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  children: [
+                    const CommonText(
+                      text: 'Start',
+                      color: Color(0xFFD48B3B),
+                      fontSize: 12,
+                    ),
+                    SizedBox(width: 4.w),
+                    const Icon(
+                      Icons.chevron_right,
+                      color: Color(0xFFD48B3B),
+                      size: 14,
+                    ),
+                  ],
+                ),
               ),
             ),
         ],

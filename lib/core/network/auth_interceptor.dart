@@ -35,6 +35,12 @@ class AuthInterceptor extends Interceptor {
       }
     }
 
+    if (token != null && token.trim().isNotEmpty && options.path.contains('reset-password')) {
+      final clean = token.trim().replaceFirst(RegExp(r'^Bearer\s+', caseSensitive: false), '');
+      options.headers['resettoken'] ??= clean;
+      options.headers['resetToken'] ??= clean;
+    }
+
     if (kDebugMode) {
       debugPrint('[Network] ${options.method} ${options.uri}');
       debugPrint('[Network] Headers: ${options.headers}');

@@ -14,6 +14,19 @@ abstract final class PrefsHelper {
   }
   static set token(String value) => _token = value;
 
+  static String _resetToken = '';
+  static String get resetToken {
+    if (_resetToken.isNotEmpty) return _resetToken;
+    if (_token.isNotEmpty) return _token;
+    if (_initialized) {
+      final saved = _preferences.getString('resetToken') ?? '';
+      if (saved.isNotEmpty) return saved;
+      return _preferences.getString('token') ?? '';
+    }
+    return '';
+  }
+  static set resetToken(String value) => _resetToken = value;
+
   static String role = '';
   static String phone = '';
   static String name = '';
@@ -39,6 +52,7 @@ abstract final class PrefsHelper {
   static void _loadCachedValues() {
     role = _preferences.getString('role') ?? '';
     _token = _preferences.getString('token') ?? '';
+    _resetToken = _preferences.getString('resetToken') ?? '';
     phone = _preferences.getString('phoneNumber') ?? '';
     name = _preferences.getString('name') ?? '';
     profileImage = _preferences.getString('profileImage') ?? '';
@@ -80,6 +94,8 @@ abstract final class PrefsHelper {
   static Future<void> setString(String key, String? value) async {
     if (key == 'token') {
       token = value ?? '';
+    } else if (key == 'resetToken') {
+      resetToken = value ?? '';
     }
     await _ensureInitialized();
     await _preferences.setString(key, value ?? '');

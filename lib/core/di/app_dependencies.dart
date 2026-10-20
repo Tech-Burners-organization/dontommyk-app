@@ -59,7 +59,10 @@ class AppDependencies {
     dio.interceptors.add(
       AuthInterceptor(tokenProvider: () async {
         if (PrefsHelper.token.isNotEmpty) return PrefsHelper.token;
-        return await PrefsHelper.getString('token');
+        if (PrefsHelper.resetToken.isNotEmpty) return PrefsHelper.resetToken;
+        final saved = await PrefsHelper.getString('token');
+        if (saved.isNotEmpty) return saved;
+        return await PrefsHelper.getString('resetToken');
       }),
     );
     if (kDebugMode) {

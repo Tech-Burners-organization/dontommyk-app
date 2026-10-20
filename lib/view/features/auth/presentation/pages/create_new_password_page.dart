@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tommy/core/utils/prefs_helper.dart';
 import 'package:tommy/route/app_route.dart';
 import 'package:tommy/view/component/background/app_background.dart';
 import 'package:tommy/view/component/common_button/common_button.dart';
 import 'package:tommy/view/component/common_text/common_text.dart';
 import 'package:tommy/view/component/custom_snacbar.dart';
 import 'package:tommy/view/component/custom_text_field/custom_text_field.dart';
+import 'package:tommy/view/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:tommy/view/features/auth/presentation/bloc/auth_bloc.dart';
 
 class CreateNewPasswordPage extends StatefulWidget {
@@ -35,7 +37,7 @@ class _CreateNewPasswordPageState extends State<CreateNewPasswordPage> {
     super.dispose();
   }
 
-  void _submit(String? effectiveToken) {
+  void _submit(String? effectiveToken) async {
     final newPassword = _newPasswordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
@@ -66,19 +68,63 @@ class _CreateNewPasswordPageState extends State<CreateNewPasswordPage> {
       return;
     }
 
+    var tokenToUse = (effectiveToken != null && effectiveToken.isNotEmpty)
+        ? effectiveToken
+        : PrefsHelper.resetToken;
+
+    if (tokenToUse.isEmpty) {
+      tokenToUse = PrefsHelper.token;
+    }
+    if (tokenToUse.isEmpty) {
+      tokenToUse = AuthRemoteDataSourceImpl.resetPasswordToken;
+    }
+    if (tokenToUse.isEmpty) {
+      tokenToUse = await PrefsHelper.getString('resetToken');
+    }
+    if (tokenToUse.isEmpty) {
+      tokenToUse = await PrefsHelper.getString('token');
+    }
+
+    debugPrint('[CreateNewPasswordPage] Submitting ResetPassword with token length: ${tokenToUse.length}');
+
+    if (tokenToUse.isEmpty) {
+      if (!mounted) return;
+      showAppSnackBar(
+        context,
+        message: 'Verification token is missing or expired. Please verify your email again.',
+        isSuccess: false,
+      );
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoute.forgotPassword,
+        (route) => false,
+      );
+      return;
+    }
+
+    if (!mounted) return;
     context.read<AuthBloc>().add(
       ResetPasswordSubmitted(
         newPassword: newPassword,
         confirmPassword: confirmPassword,
-        token: effectiveToken,
+        token: tokenToUse,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final effectiveToken = widget.token ??
-        (ModalRoute.of(context)?.settings.arguments as String?);
+    final routeArg = ModalRoute.of(context)?.settings.arguments;
+    final tokenFromArg = routeArg is String ? routeArg : null;
+    final effectiveToken = (widget.token != null && widget.token!.isNotEmpty)
+        ? widget.token!
+        : ((tokenFromArg != null && tokenFromArg.isNotEmpty)
+            ? tokenFromArg
+            : (PrefsHelper.resetToken.isNotEmpty
+                ? PrefsHelper.resetToken
+                : (PrefsHelper.token.isNotEmpty
+                    ? PrefsHelper.token
+                    : AuthRemoteDataSourceImpl.resetPasswordToken)));
 
     return Scaffold(
       body: AppBackground(

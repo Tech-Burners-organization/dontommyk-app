@@ -42,6 +42,32 @@ class AssessmentRepositoryImpl implements AssessmentRepository {
   }
 
   @override
+  Future<Result<AiAssessmentResponse>> getAiAssessment(String assessmentId) async {
+    try {
+      final response = await remoteDataSource.getAiAssessment(assessmentId);
+      return ResultSuccess(response);
+    } catch (e) {
+      return ResultFailure(FailureMapper.from(e));
+    }
+  }
+
+  @override
+  Future<Result<String>> submitAiAssessment({
+    required String assessmentId,
+    required List<AssessmentAnswer> answers,
+  }) async {
+    try {
+      final message = await remoteDataSource.submitAiAssessment(
+        assessmentId: assessmentId,
+        answers: answers,
+      );
+      return ResultSuccess(message);
+    } catch (e) {
+      return ResultFailure(FailureMapper.from(e));
+    }
+  }
+
+  @override
   Future<Result<List<AssessmentHistoryItemModel>>> getAssessmentHistory() async {
     try {
       final history = await remoteDataSource.getAssessmentHistory();

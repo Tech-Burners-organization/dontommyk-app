@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:tommy/core/network/api_service.dart';
+import 'package:tommy/core/utils/prefs_helper.dart';
 import 'package:tommy/view/features/auth/data/models/login_response.dart';
 
 abstract class AuthRemoteDataSource {
@@ -21,6 +23,8 @@ abstract class AuthRemoteDataSource {
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final ApiService apiService;
+
+  static String resetPasswordToken = '';
 
   AuthRemoteDataSourceImpl(this.apiService);
 
@@ -50,9 +54,45 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         'Please check your email. We have sent you a one-time passcode (OTP).';
   }
 
+  String _extractToken(dynamic json) {
+    if (json == null) return '';
+    if (json is String && json.trim().isNotEmpty) return json.trim();
+    if (json is Map) {
+      for (final key in [
+        'accessToken',
+        'token',
+        'access_token',
+        'resetToken',
+        'reset_token',
+        'verificationToken',
+        'authToken',
+        'auth_token',
+        'jwt',
+      ]) {
+        final val = json[key];
+        if (val != null && val.toString().trim().isNotEmpty) {
+          return val.toString().trim();
+        }
+      }
+      final data = json['data'];
+      if (data != null) {
+        final fromData = _extractToken(data);
+        if (fromData.isNotEmpty) return fromData;
+      }
+      for (final entry in json.entries) {
+        final k = entry.key.toString().toLowerCase();
+        if (k.contains('token') && entry.value is String && (entry.value as String).trim().isNotEmpty) {
+          return (entry.value as String).trim();
+        }
+      }
+    }
+    return '';
+  }
+
   @override
   Future<String> verifyEmail(String email, String otp) async {
     final otpValue = int.tryParse(otp.trim()) ?? otp.trim();
+    debugPrint('[VerifyEmail] Request: POST /auth/verify-email, email: $email, OTP: $otpValue');
     final response = await apiService.postData<String>(
       '/auth/verify-email',
       {
@@ -60,20 +100,22 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         'OTP': otpValue,
       },
       decoder: (json) {
-        if (json is Map) {
-          final data = json['data'];
-          if (data is Map) {
-            final t = data['accessToken'] ?? data['token'] ?? data['access_token'];
-            if (t != null) return t.toString();
-          }
-          if (data is String && data.isNotEmpty) return data;
-          final rootToken = json['accessToken'] ?? json['token'] ?? json['access_token'];
-          if (rootToken != null) return rootToken.toString();
-        }
-        return '';
+        debugPrint('[VerifyEmail] Response json: $json');
+        final token = _extractToken(json);
+        debugPrint('[VerifyEmail] Extracted token: $token');
+        return token;
       },
     );
-    return response.data;
+
+    final token = response.data;
+    if (token.isNotEmpty) {
+      resetPasswordToken = token;
+      PrefsHelper.token = token;
+      PrefsHelper.resetToken = token;
+      await PrefsHelper.setString('token', token);
+      await PrefsHelper.setString('resetToken', token);
+    }
+    return token;
   }
 
   @override
@@ -94,16 +136,53 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     String confirmPassword, {
     String? token,
   }) async {
-    final headers = (token != null && token.isNotEmpty)
-        ? {'Authorization': 'Bearer $token'}
+    var effectiveToken = token?.trim() ?? '';
+    if (effectiveToken.isEmpty) {
+      effectiveToken = resetPasswordToken.trim();
+    }
+    if (effectiveToken.isEmpty) {
+      effectiveToken = PrefsHelper.resetToken.trim();
+    }
+    if (effectiveToken.isEmpty) {
+      effectiveToken = PrefsHelper.token.trim();
+    }
+    if (effectiveToken.isEmpty) {
+      effectiveToken = (await PrefsHelper.getString('resetToken')).trim();
+    }
+    if (effectiveToken.isEmpty) {
+      effectiveToken = (await PrefsHelper.getString('token')).trim();
+    }
+
+    final cleanToken = effectiveToken
+        .replaceFirst(RegExp(r'^Bearer\s+', caseSensitive: false), '')
+        .trim();
+
+    debugPrint('====================================');
+    debugPrint('[ResetPassword] Endpoint: POST /auth/reset-password');
+    debugPrint('[ResetPassword] Clean Token: ${cleanToken.isNotEmpty ? (cleanToken.length > 25 ? "${cleanToken.substring(0, 25)}..." : cleanToken) : "EMPTY!"}');
+    debugPrint('====================================');
+
+    final headers = cleanToken.isNotEmpty
+        ? {
+            'resettoken': cleanToken,
+            'resetToken': cleanToken,
+            'token': cleanToken,
+            'Authorization': 'Bearer $cleanToken',
+          }
         : null;
+
+    final body = <String, dynamic>{
+      'newPassword': newPassword,
+      'confirmPassword': confirmPassword,
+      if (cleanToken.isNotEmpty) ...{
+        'resettoken': cleanToken,
+        'resetToken': cleanToken,
+      },
+    };
 
     final response = await apiService.postData<Map<String, dynamic>>(
       '/auth/reset-password',
-      {
-        'newPassword': newPassword,
-        'confirmPassword': confirmPassword,
-      },
+      body,
       headers: headers,
       decoder: (json) => json as Map<String, dynamic>,
     );

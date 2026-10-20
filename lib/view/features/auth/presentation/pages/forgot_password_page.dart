@@ -21,7 +21,7 @@ class ForgotPasswordPage extends StatefulWidget {
 
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final _emailController = TextEditingController(
-    text: kDebugMode ? "mirza.eee.4th@gmail.com" : "",
+    text: kDebugMode ? "topupremium3317@gmail.com" : "",
   );
 
   @override

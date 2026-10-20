@@ -11,10 +11,13 @@ import 'package:tommy/view/features/auth/domain/usecases/verify_email_usecase.da
 import 'package:tommy/view/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:tommy/view/features/assessment/data/models/assessment_history_model.dart';
 import 'package:tommy/view/features/assessment/domain/repositories/assessment_repository.dart';
+import 'package:tommy/view/features/assessment/domain/usecases/get_ai_assessment_usecase.dart';
 import 'package:tommy/view/features/assessment/domain/usecases/get_assessment_detail_usecase.dart';
 import 'package:tommy/view/features/assessment/domain/usecases/get_assessment_history_usecase.dart';
 import 'package:tommy/view/features/assessment/domain/usecases/get_initial_assessment_usecase.dart';
+import 'package:tommy/view/features/assessment/domain/usecases/submit_ai_assessment_usecase.dart';
 import 'package:tommy/view/features/assessment/domain/usecases/submit_initial_assessment_usecase.dart';
+import 'package:tommy/view/features/assessment/presentation/bloc/ai_assessment_cubit.dart';
 import 'package:tommy/view/features/assessment/presentation/bloc/assessment_bloc.dart';
 import 'package:tommy/view/features/assessment/presentation/bloc/assessment_detail_cubit.dart';
 import 'package:tommy/view/features/assessment/presentation/bloc/assessment_history_cubit.dart';
@@ -31,6 +34,7 @@ import 'package:tommy/view/features/profile/presentation/bloc/legal_content_cubi
 import 'package:tommy/view/features/profile/presentation/bloc/profile_bloc.dart';
 
 import 'package:tommy/view/features/ai_coach/presentation/pages/ai_coach_page.dart';
+import 'package:tommy/view/features/assessment/presentation/pages/ai_assessment_page.dart';
 import 'package:tommy/view/features/assessment/presentation/pages/assessment_page.dart';
 import 'package:tommy/view/features/auth/presentation/pages/create_new_password_page.dart';
 import 'package:tommy/view/features/auth/presentation/pages/forgot_password_page.dart';
@@ -63,6 +67,7 @@ abstract final class AppRoute {
   static const String verificationCode = '/verification-code';
   static const String createNewPassword = '/create-new-password';
   static const String assessment = '/assessment';
+  static const String aiAssessment = '/assessment/ai';
   static const String dashboard = '/dashboard';
   static const String homePage = '/home/overview';
   static const String aiCoach = '/home/ai-coach';
@@ -172,7 +177,12 @@ abstract final class AppRoute {
       createNewPassword => MaterialPageRoute<void>(
         settings: settings,
         builder: (context) {
-          final token = settings.arguments as String?;
+          final argToken = settings.arguments as String?;
+          final token = (argToken != null && argToken.isNotEmpty)
+              ? argToken
+              : (PrefsHelper.resetToken.isNotEmpty
+                  ? PrefsHelper.resetToken
+                  : PrefsHelper.token);
           return BlocProvider(
             create: (_) => _buildAuthBloc(context),
             child: CreateNewPasswordPage(token: token),
@@ -190,6 +200,20 @@ abstract final class AppRoute {
                   SubmitInitialAssessmentUseCase(repo),
             )..add(const FetchAssessmentEvent()),
             child: const AssessmentPage(),
+          );
+        },
+      ),
+      aiAssessment => MaterialPageRoute<bool>(
+        settings: settings,
+        builder: (context) {
+          final assessmentId = settings.arguments as String? ?? '';
+          final repo = context.read<AssessmentRepository>();
+          return BlocProvider(
+            create: (_) => AiAssessmentCubit(
+              getAiAssessmentUseCase: GetAiAssessmentUseCase(repo),
+              submitAiAssessmentUseCase: SubmitAiAssessmentUseCase(repo),
+            )..loadAiAssessment(assessmentId),
+            child: AiAssessmentPage(assessmentId: assessmentId),
           );
         },
       ),

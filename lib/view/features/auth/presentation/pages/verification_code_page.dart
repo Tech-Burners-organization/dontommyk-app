@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:tommy/core/utils/prefs_helper.dart';
 import 'package:tommy/route/app_route.dart';
 import 'package:tommy/view/component/background/app_background.dart';
 import 'package:tommy/view/component/common_button/common_button.dart';
@@ -245,19 +246,25 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
                         message: state.message,
                         isSuccess: true,
                       );
+                      final tokenToPass = state.token.isNotEmpty
+                          ? state.token
+                          : (PrefsHelper.resetToken.isNotEmpty
+                              ? PrefsHelper.resetToken
+                              : PrefsHelper.token);
+                      debugPrint('[VerificationCodePage] Navigating with token: ${tokenToPass.isNotEmpty ? (tokenToPass.length > 25 ? "${tokenToPass.substring(0, 25)}..." : tokenToPass) : "EMPTY"}');
                       switch (widget.purpose) {
                         case VerificationPurpose.passwordReset:
                           Navigator.pushNamed(
                             context,
                             AppRoute.createNewPassword,
-                            arguments: state.token,
+                            arguments: tokenToPass,
                           );
                           break;
                         case VerificationPurpose.signUp:
                           Navigator.pushReplacementNamed(
                             context,
                             AppRoute.profileSetup,
-                            arguments: state.token,
+                            arguments: tokenToPass,
                           );
                           break;
                       }

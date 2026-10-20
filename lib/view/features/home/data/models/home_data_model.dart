@@ -96,32 +96,45 @@ class HomeCycleModel {
 
 class HomeTaskModel {
   final String id;
+  final String? assessmentId;
   final int day;
   final String category;
   final String title;
   final String description;
   final bool completed;
   final String? completedAt;
+  final int? score;
+  final int questionCount;
 
   const HomeTaskModel({
     required this.id,
+    this.assessmentId,
     required this.day,
     required this.category,
     required this.title,
     required this.description,
     required this.completed,
     this.completedAt,
+    this.score,
+    this.questionCount = 0,
   });
 
   factory HomeTaskModel.fromJson(Map<String, dynamic> json) {
     return HomeTaskModel(
-      id: json['_id']?.toString() ?? '',
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      assessmentId: json['assessmentId']?.toString() ??
+          json['assessment_id']?.toString() ??
+          (json['assessment'] is Map
+              ? json['assessment']['_id']?.toString()
+              : (json['assessment'] is String ? json['assessment'].toString() : null)),
       day: (json['day'] as num?)?.toInt() ?? 1,
       category: json['category']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
       completed: json['completed'] as bool? ?? false,
       completedAt: json['completedAt']?.toString(),
+      score: (json['score'] as num?)?.toInt(),
+      questionCount: (json['questionCount'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -139,15 +152,30 @@ class HomeTodayPlanModel {
     required this.totalCount,
   });
 
+  int get calculatedCompletedCount =>
+      tasks.isNotEmpty ? tasks.where((t) => t.completed).length : completedCount;
+
+  int get calculatedTotalCount =>
+      tasks.isNotEmpty ? tasks.length : totalCount;
+
   factory HomeTodayPlanModel.fromJson(Map<String, dynamic> json) {
     final rawTasks = json['tasks'] as List<dynamic>? ?? [];
+    final tasksList = rawTasks
+        .map((e) => HomeTaskModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+
+    final actualCompleted = tasksList.where((t) => t.completed).length;
+    final actualTotal = tasksList.length;
+
     return HomeTodayPlanModel(
       day: (json['day'] as num?)?.toInt() ?? 1,
-      tasks: rawTasks
-          .map((e) => HomeTaskModel.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      completedCount: (json['completedCount'] as num?)?.toInt() ?? 0,
-      totalCount: (json['totalCount'] as num?)?.toInt() ?? 0,
+      tasks: tasksList,
+      completedCount: actualTotal > 0
+          ? actualCompleted
+          : ((json['completedCount'] as num?)?.toInt() ?? 0),
+      totalCount: actualTotal > 0
+          ? actualTotal
+          : ((json['totalCount'] as num?)?.toInt() ?? 0),
     );
   }
 }
