@@ -1,10 +1,14 @@
 class LegalContentModel {
   final String type;
+  final String key;
+  final String title;
   final String content;
   final String? updatedAt;
 
   const LegalContentModel({
-    required this.type,
+    this.type = '',
+    this.key = '',
+    this.title = '',
     required this.content,
     this.updatedAt,
   });
@@ -15,7 +19,9 @@ class LegalContentModel {
         : json;
 
     return LegalContentModel(
-      type: data['type']?.toString() ?? '',
+      type: data['type']?.toString() ?? data['key']?.toString() ?? '',
+      key: data['key']?.toString() ?? data['type']?.toString() ?? '',
+      title: data['title']?.toString() ?? '',
       content: data['content']?.toString() ?? '',
       updatedAt: data['updatedAt']?.toString(),
     );
@@ -24,6 +30,8 @@ class LegalContentModel {
   Map<String, dynamic> toJson() {
     return {
       'type': type,
+      'key': key,
+      'title': title,
       'content': content,
       'updatedAt': updatedAt,
     };

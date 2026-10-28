@@ -90,21 +90,29 @@ class AiAssessmentCubit extends Cubit<AiAssessmentState> {
   final GetAiAssessmentUseCase getAiAssessmentUseCase;
   final SubmitAiAssessmentUseCase submitAiAssessmentUseCase;
   String _targetId = '';
+  bool _isWeekly = false;
 
   AiAssessmentCubit({
     required this.getAiAssessmentUseCase,
     required this.submitAiAssessmentUseCase,
   }) : super(const AiAssessmentInitial());
 
-  Future<void> loadAiAssessment(String assessmentId) async {
+  Future<void> loadAiAssessment(
+    String assessmentId, {
+    bool isWeekly = false,
+  }) async {
     _targetId = assessmentId;
+    _isWeekly = isWeekly;
     if (assessmentId.trim().isEmpty) {
       emit(const AiAssessmentError('Assessment ID is missing.'));
       return;
     }
 
     emit(const AiAssessmentLoading());
-    final result = await getAiAssessmentUseCase(assessmentId);
+    final result = await getAiAssessmentUseCase(
+      assessmentId,
+      isWeekly: isWeekly,
+    );
 
     switch (result) {
       case ResultSuccess(data: final response):
@@ -197,6 +205,7 @@ class AiAssessmentCubit extends Cubit<AiAssessmentState> {
       SubmitAiAssessmentParams(
         assessmentId: targetId,
         answers: answers,
+        isWeekly: _isWeekly,
       ),
     );
 

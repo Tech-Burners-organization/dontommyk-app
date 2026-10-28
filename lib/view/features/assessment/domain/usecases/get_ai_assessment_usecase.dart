@@ -10,8 +10,11 @@ class GetAiAssessmentUseCase
   GetAiAssessmentUseCase(this.repository);
 
   @override
-  Future<Result<AiAssessmentResponse>> call(String assessmentId) {
-    return repository.getAiAssessment(assessmentId);
+  Future<Result<AiAssessmentResponse>> call(
+    String assessmentId, {
+    bool isWeekly = false,
+  }) {
+    return repository.getAiAssessment(assessmentId, isWeekly: isWeekly);
   }
 }
 

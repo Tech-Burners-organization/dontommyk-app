@@ -108,11 +108,21 @@ class _StaticContentView extends StatelessWidget {
                   ),
                   Expanded(
                     child: Center(
-                      child: CommonText(
-                        text: title,
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+                      child: BlocBuilder<LegalContentCubit, LegalContentState>(
+                        builder: (context, state) {
+                          final displayTitle = switch (state) {
+                            LegalContentLoaded(:final content)
+                                when content.title.isNotEmpty =>
+                              content.title,
+                            _ => title,
+                          };
+                          return CommonText(
+                            text: displayTitle,
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          );
+                        },
                       ),
                     ),
                   ),

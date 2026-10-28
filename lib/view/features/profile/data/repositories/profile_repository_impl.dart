@@ -92,6 +92,12 @@ class ProfileRepositoryImpl implements ProfileRepository {
       if (profile.fullName.isNotEmpty) {
         await PrefsHelper.setString('name', profile.fullName);
       }
+      if (profile.firstName.isNotEmpty) {
+        await PrefsHelper.setString('firstName', profile.firstName);
+      }
+      if (profile.lastName.isNotEmpty) {
+        await PrefsHelper.setString('lastName', profile.lastName);
+      }
       if (profile.designation.isNotEmpty) {
         await PrefsHelper.setString('role', profile.designation);
       }

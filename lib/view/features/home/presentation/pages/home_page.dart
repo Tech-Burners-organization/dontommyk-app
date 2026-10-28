@@ -89,6 +89,11 @@ class HomePage extends StatelessWidget {
                         _buildScoreCard(data),
                         SizedBox(height: 20.h),
                         _buildCategoryScores(data.scores),
+                        if (data.nextAssessment != null &&
+                            data.nextAssessment!.isDue) ...[
+                          SizedBox(height: 20.h),
+                          _buildWeeklyAssessmentCard(context, data),
+                        ],
                         SizedBox(height: 28.h),
                         _buildTodayPlan(context, data),
                         SizedBox(height: 32.h),
@@ -337,6 +342,155 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  Future<void> _startWeeklyAssessment(
+    BuildContext context,
+    String assessmentId,
+  ) async {
+    if (assessmentId.trim().isEmpty) {
+      showAppSnackBar(
+        context,
+        message: 'Assessment ID not found.',
+        isSuccess: false,
+      );
+      return;
+    }
+
+    final result = await Navigator.pushNamed(
+      context,
+      AppRoute.aiAssessment,
+      arguments: {
+        'id': assessmentId,
+        'isWeekly': true,
+      },
+    );
+
+    if (result == true && context.mounted) {
+      context.read<HomeBloc>().add(const FetchHomeDataEvent());
+    }
+  }
+
+  Widget _buildWeeklyAssessmentCard(BuildContext context, HomeDataModel data) {
+    final next = data.nextAssessment;
+    if (next == null || !next.isDue) return const SizedBox.shrink();
+
+    final category = next.category.isNotEmpty
+        ? (next.category[0].toUpperCase() + next.category.substring(1))
+        : 'Communication';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF2C190E), Color(0xFF1B110B)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFD48B3B),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFD48B3B).withValues(alpha: 0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3D2414),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFD48B3B).withValues(alpha: 0.5),
+                  ),
+                ),
+                child: const Center(
+                  child: Text(
+                    '📋',
+                    style: TextStyle(fontSize: 22),
+                  ),
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                const Color(0xFFD48B3B).withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: const Color(0xFFD48B3B)
+                                  .withValues(alpha: 0.4),
+                            ),
+                          ),
+                          child: const CommonText(
+                            text: 'WEEKLY ASSESSMENT · READY',
+                            color: Color(0xFFFBE1A6),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 6.h),
+                    const CommonText(
+                      text: 'Your weekly assessment is ready',
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    SizedBox(height: 4.h),
+                    CommonText(
+                      text: '$category · Cycle ${next.cycleNumber}',
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 14.h),
+          CommonButton(
+            titleText: 'Start Assessment',
+            titleColor: Colors.black,
+            gradient: const LinearGradient(
+              colors: [Color(0xFFC77926), Color(0xFFFBE1A6)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+            trailingIcon: const Icon(
+              Icons.arrow_forward,
+              color: Colors.black,
+              size: 16,
+            ),
+            onTap: () => _startWeeklyAssessment(context, next.assessmentId),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTodayPlan(BuildContext context, HomeDataModel data) {
     final todayPlan = data.todayPlan;
     final completedCount = todayPlan.calculatedCompletedCount;
@@ -514,7 +668,10 @@ class HomePage extends StatelessWidget {
                 final result = await Navigator.pushNamed(
                   context,
                   AppRoute.aiAssessment,
-                  arguments: targetId,
+                  arguments: {
+                    'id': targetId,
+                    'isWeekly': false,
+                  },
                 );
 
                 if (result == true && context.mounted) {

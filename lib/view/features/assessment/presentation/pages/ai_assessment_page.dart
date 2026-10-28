@@ -9,10 +9,12 @@ import 'package:tommy/view/features/assessment/presentation/bloc/ai_assessment_c
 
 class AiAssessmentPage extends StatelessWidget {
   final String assessmentId;
+  final bool isWeekly;
 
   const AiAssessmentPage({
     super.key,
     required this.assessmentId,
+    this.isWeekly = false,
   });
 
   @override
@@ -78,7 +80,7 @@ class AiAssessmentPage extends StatelessWidget {
                           onTap: () {
                             context
                                 .read<AiAssessmentCubit>()
-                                .loadAiAssessment(assessmentId);
+                                .loadAiAssessment(assessmentId, isWeekly: isWeekly);
                           },
                         ),
                         SizedBox(height: 12.h),
@@ -174,8 +176,9 @@ class AiAssessmentPage extends StatelessWidget {
                                           ),
                                         ),
                                         child: CommonText(
-                                          text: currentQuestion.category
-                                              .toUpperCase(),
+                                          text: isWeekly
+                                              ? 'WEEKLY · ${currentQuestion.category.toUpperCase()}'
+                                              : currentQuestion.category.toUpperCase(),
                                           color: const Color(0xFFFBE1A6),
                                           fontSize: 11,
                                           fontWeight: FontWeight.w600,

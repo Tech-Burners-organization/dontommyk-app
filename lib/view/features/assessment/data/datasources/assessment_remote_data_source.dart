@@ -12,10 +12,14 @@ abstract class AssessmentRemoteDataSource {
     required String benchmarkId,
     required List<AssessmentAnswer> answers,
   });
-  Future<AiAssessmentResponse> getAiAssessment(String assessmentId);
+  Future<AiAssessmentResponse> getAiAssessment(
+    String assessmentId, {
+    bool isWeekly = false,
+  });
   Future<String> submitAiAssessment({
     required String assessmentId,
     required List<AssessmentAnswer> answers,
+    bool isWeekly = false,
   });
   Future<List<AssessmentHistoryItemModel>> getAssessmentHistory();
   Future<AssessmentDetailModel> getAssessmentDetail(String assessmentId);
@@ -60,13 +64,21 @@ class AssessmentRemoteDataSourceImpl implements AssessmentRemoteDataSource {
   }
 
   @override
-  Future<AiAssessmentResponse> getAiAssessment(String assessmentId) async {
+  Future<AiAssessmentResponse> getAiAssessment(
+    String assessmentId, {
+    bool isWeekly = false,
+  }) async {
+    final weeklyPath = '/assessments/ai/$assessmentId';
     final practicePlanPath =
         '/ai-feedback/me/practice-plan/$assessmentId/questions';
+
+    final primaryPath = isWeekly ? weeklyPath : practicePlanPath;
+    final fallbackPath = isWeekly ? practicePlanPath : weeklyPath;
+
     try {
-      debugPrint('[GetAiAssessment] Requesting: GET $practicePlanPath');
+      debugPrint('[GetAiAssessment] Requesting primary (isWeekly: $isWeekly): GET $primaryPath');
       final response = await apiService.getData<AiAssessmentResponse>(
-        practicePlanPath,
+        primaryPath,
         decoder: (json) => AiAssessmentResponse.fromJson(
           json as Map<String, dynamic>,
         ),
@@ -74,8 +86,7 @@ class AssessmentRemoteDataSourceImpl implements AssessmentRemoteDataSource {
       return response.data;
     } catch (e) {
       debugPrint(
-          '[GetAiAssessment] $practicePlanPath failed: $e. Trying fallback /assessments/ai/$assessmentId...');
-      final fallbackPath = '/assessments/ai/$assessmentId';
+          '[GetAiAssessment] $primaryPath failed: $e. Trying fallback: GET $fallbackPath...');
       final response = await apiService.getData<AiAssessmentResponse>(
         fallbackPath,
         decoder: (json) => AiAssessmentResponse.fromJson(
@@ -90,39 +101,55 @@ class AssessmentRemoteDataSourceImpl implements AssessmentRemoteDataSource {
   Future<String> submitAiAssessment({
     required String assessmentId,
     required List<AssessmentAnswer> answers,
+    bool isWeekly = false,
   }) async {
-    final body = {
-      'answers': answers.map((a) => a.toJson()).toList(),
+    final answersList = answers.map((a) => a.toJson()).toList();
+
+    // Body for weekly assessment POST /assessments/:id/submit-ai:
+    // { "assessmentData": [ { "questionId": "...", "answer": "..." } ] }
+    final weeklyBody = {
+      'assessmentData': answersList,
     };
 
+    // Body for practice plan task POST /ai-feedback/me/practice-plan/:id/submit:
+    // { "answers": [ { "questionId": "...", "answer": "..." } ] }
+    final practicePlanBody = {
+      'answers': answersList,
+    };
+
+    final weeklyPath = '/assessments/$assessmentId/submit-ai';
+    final practicePlanPath =
+        '/ai-feedback/me/practice-plan/$assessmentId/submit';
+
+    final primaryPath = isWeekly ? weeklyPath : practicePlanPath;
+    final primaryBody = isWeekly ? weeklyBody : practicePlanBody;
+
+    final fallbackPath = isWeekly ? practicePlanPath : weeklyPath;
+    final fallbackBody = isWeekly ? practicePlanBody : weeklyBody;
+
     final encoder = const JsonEncoder.withIndent('  ');
-    final formattedBody = encoder.convert(body);
+    final formattedBody = encoder.convert(primaryBody);
 
     debugPrint('====================================');
-    debugPrint('[SubmitAiAssessment] Target ID: $assessmentId');
+    debugPrint('[SubmitAiAssessment] Target ID: $assessmentId (isWeekly: $isWeekly)');
     debugPrint('[SubmitAiAssessment] Total Answers: ${answers.length}');
+    debugPrint('[SubmitAiAssessment] Primary Path: POST $primaryPath');
     debugPrint('[SubmitAiAssessment] Request Body:\n$formattedBody');
     debugPrint('====================================');
 
-    // 1. Practice plan submit endpoint from Postman:
-    // POST /ai-feedback/me/practice-plan/:task_id/submit
-    final practicePlanPath =
-        '/ai-feedback/me/practice-plan/$assessmentId/submit';
     try {
-      debugPrint('[SubmitAiAssessment] Attempting: POST $practicePlanPath');
       final response = await apiService.postData<Map<String, dynamic>>(
-        practicePlanPath,
-        body,
+        primaryPath,
+        primaryBody,
         decoder: (json) => json as Map<String, dynamic>,
       );
       return response.message ?? 'Assessment submitted successfully.';
     } catch (e) {
       debugPrint(
-          '[SubmitAiAssessment] $practicePlanPath failed: $e. Falling back to /assessments/$assessmentId/submit-ai...');
-      final fallbackPath = '/assessments/$assessmentId/submit-ai';
+          '[SubmitAiAssessment] $primaryPath failed: $e. Falling back to: POST $fallbackPath...');
       final response = await apiService.postData<Map<String, dynamic>>(
         fallbackPath,
-        body,
+        fallbackBody,
         decoder: (json) => json as Map<String, dynamic>,
       );
       return response.message ?? 'Assessment submitted successfully.';

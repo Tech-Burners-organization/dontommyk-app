@@ -30,6 +30,8 @@ abstract final class PrefsHelper {
   static String role = '';
   static String phone = '';
   static String name = '';
+  static String firstName = '';
+  static String lastName = '';
   static String email = '';
   static String gender = '';
   static String dateBirth = '';
@@ -55,6 +57,8 @@ abstract final class PrefsHelper {
     _resetToken = _preferences.getString('resetToken') ?? '';
     phone = _preferences.getString('phoneNumber') ?? '';
     name = _preferences.getString('name') ?? '';
+    firstName = _preferences.getString('firstName') ?? '';
+    lastName = _preferences.getString('lastName') ?? '';
     profileImage = _preferences.getString('profileImage') ?? '';
     email = _preferences.getString('email') ?? '';
     dateBirth = _preferences.getString('dateBirth') ?? '';

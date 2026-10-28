@@ -7,14 +7,16 @@ import 'package:tommy/view/features/assessment/domain/repositories/assessment_re
 class SubmitAiAssessmentParams extends Equatable {
   final String assessmentId;
   final List<AssessmentAnswer> answers;
+  final bool isWeekly;
 
   const SubmitAiAssessmentParams({
     required this.assessmentId,
     required this.answers,
+    this.isWeekly = false,
   });
 
   @override
-  List<Object?> get props => [assessmentId, answers];
+  List<Object?> get props => [assessmentId, answers, isWeekly];
 }
 
 class SubmitAiAssessmentUseCase
@@ -28,6 +30,7 @@ class SubmitAiAssessmentUseCase
     return repository.submitAiAssessment(
       assessmentId: params.assessmentId,
       answers: params.answers,
+      isWeekly: params.isWeekly,
     );
   }
 }

@@ -40,11 +40,30 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
 
   @override
   Future<LegalContentModel> getLegalContent(String slug) async {
-    final response = await apiService.getData<LegalContentModel>(
-      '/legal-contents/$slug',
-      decoder: (json) => LegalContentModel.fromJson(json as Map<String, dynamic>),
-    );
-    return response.data;
+    final cleanSlug = slug.startsWith('/') ? slug.substring(1) : slug;
+    final primaryPath = cleanSlug.startsWith('app-contents/')
+        ? '/$cleanSlug'
+        : '/app-contents/$cleanSlug';
+
+    final fallbackPath = cleanSlug.startsWith('legal-contents/')
+        ? '/$cleanSlug'
+        : '/legal-contents/$cleanSlug';
+
+    try {
+      debugPrint('[GetLegalContent] Requesting primary: GET $primaryPath');
+      final response = await apiService.getData<LegalContentModel>(
+        primaryPath,
+        decoder: (json) => LegalContentModel.fromJson(json as Map<String, dynamic>),
+      );
+      return response.data;
+    } catch (e) {
+      debugPrint('[GetLegalContent] $primaryPath failed: $e. Trying fallback: GET $fallbackPath');
+      final response = await apiService.getData<LegalContentModel>(
+        fallbackPath,
+        decoder: (json) => LegalContentModel.fromJson(json as Map<String, dynamic>),
+      );
+      return response.data;
+    }
   }
 
   @override

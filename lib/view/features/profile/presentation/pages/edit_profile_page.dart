@@ -22,7 +22,8 @@ class EditProfilePage extends StatefulWidget {
 }
 
 class _EditProfilePageState extends State<EditProfilePage> {
-  late final TextEditingController _nameController;
+  late final TextEditingController _firstNameController;
+  late final TextEditingController _lastNameController;
   late final TextEditingController _emailController;
   late final TextEditingController _roleController;
   late final TextEditingController _ageController;
@@ -36,9 +37,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
     super.initState();
     final p = widget.profile;
 
-    final initialName = (p?.fullName.isNotEmpty == true)
-        ? p!.fullName
-        : PrefsHelper.name;
+    String initialFirstName = (p?.firstName.isNotEmpty == true) ? p!.firstName : '';
+    String initialLastName = (p?.lastName.isNotEmpty == true) ? p!.lastName : '';
+
+    if (initialFirstName.isEmpty && initialLastName.isEmpty) {
+      initialFirstName = PrefsHelper.firstName;
+      initialLastName = PrefsHelper.lastName;
+    }
+
+    if (initialFirstName.isEmpty && initialLastName.isEmpty && PrefsHelper.name.isNotEmpty) {
+      final parts = PrefsHelper.name.split(RegExp(r'\s+'));
+      initialFirstName = parts.isNotEmpty ? parts.first : '';
+      initialLastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+    }
 
     final initialRole = (p?.designation.isNotEmpty == true)
         ? p!.designation
@@ -54,7 +65,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
         ? p!.profilePhoto
         : PrefsHelper.profileImage;
 
-    _nameController = TextEditingController(text: initialName);
+    _firstNameController = TextEditingController(text: initialFirstName);
+    _lastNameController = TextEditingController(text: initialLastName);
     _emailController = TextEditingController(text: initialEmail);
     _roleController = TextEditingController(text: initialRole);
     _ageController = TextEditingController(text: initialAge);
@@ -63,7 +75,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _roleController.dispose();
     _ageController.dispose();
@@ -85,13 +98,23 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   void _onSave() {
-    final name = _nameController.text.trim();
+    final firstName = _firstNameController.text.trim();
+    final lastName = _lastNameController.text.trim();
     final role = _roleController.text.trim();
 
-    if (name.isEmpty) {
+    if (firstName.isEmpty) {
       showAppSnackBar(
         context,
-        message: 'Please enter your full name',
+        message: 'Please enter your first name',
+        isSuccess: false,
+      );
+      return;
+    }
+
+    if (lastName.isEmpty) {
+      showAppSnackBar(
+        context,
+        message: 'Please enter your last name',
         isSuccess: false,
       );
       return;
@@ -105,10 +128,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
       );
       return;
     }
-
-    final parts = name.split(RegExp(r'\s+'));
-    final firstName = parts.isNotEmpty ? parts.first : '';
-    final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
 
     final ageText = _ageController.text.trim();
     final age = int.tryParse(ageText);
@@ -227,14 +246,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 SizedBox(height: 32.h),
 
                 const CommonText(
-                  text: 'Full Name',
+                  text: 'First Name',
                   color: Colors.white,
                   fontSize: 14,
                 ),
                 SizedBox(height: 8.h),
                 CustomTextField(
-                  controller: _nameController,
-                  hintText: 'Enter your full name',
+                  controller: _firstNameController,
+                  hintText: 'Enter your first name',
                   fillColor: Colors.white.withValues(alpha: 0.05),
                   fieldBorderColor: Colors.white12,
                   fieldBorderRadius: 14,
@@ -242,6 +261,27 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   hintStyle: const TextStyle(color: Colors.white38),
                   cursorColor: Colors.white,
                   keyboardType: TextInputType.name,
+                  textInputAction: TextInputAction.next,
+                ),
+                SizedBox(height: 20.h),
+
+                const CommonText(
+                  text: 'Last Name',
+                  color: Colors.white,
+                  fontSize: 14,
+                ),
+                SizedBox(height: 8.h),
+                CustomTextField(
+                  controller: _lastNameController,
+                  hintText: 'Enter your last name',
+                  fillColor: Colors.white.withValues(alpha: 0.05),
+                  fieldBorderColor: Colors.white12,
+                  fieldBorderRadius: 14,
+                  textStyle: const TextStyle(color: Colors.white),
+                  hintStyle: const TextStyle(color: Colors.white38),
+                  cursorColor: Colors.white,
+                  keyboardType: TextInputType.name,
+                  textInputAction: TextInputAction.next,
                 ),
                 SizedBox(height: 20.h),
 

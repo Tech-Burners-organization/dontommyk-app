@@ -42,9 +42,15 @@ class AssessmentRepositoryImpl implements AssessmentRepository {
   }
 
   @override
-  Future<Result<AiAssessmentResponse>> getAiAssessment(String assessmentId) async {
+  Future<Result<AiAssessmentResponse>> getAiAssessment(
+    String assessmentId, {
+    bool isWeekly = false,
+  }) async {
     try {
-      final response = await remoteDataSource.getAiAssessment(assessmentId);
+      final response = await remoteDataSource.getAiAssessment(
+        assessmentId,
+        isWeekly: isWeekly,
+      );
       return ResultSuccess(response);
     } catch (e) {
       return ResultFailure(FailureMapper.from(e));
@@ -55,11 +61,13 @@ class AssessmentRepositoryImpl implements AssessmentRepository {
   Future<Result<String>> submitAiAssessment({
     required String assessmentId,
     required List<AssessmentAnswer> answers,
+    bool isWeekly = false,
   }) async {
     try {
       final message = await remoteDataSource.submitAiAssessment(
         assessmentId: assessmentId,
         answers: answers,
+        isWeekly: isWeekly,
       );
       return ResultSuccess(message);
     } catch (e) {

@@ -199,12 +199,18 @@ class HomeNextAssessmentModel {
 
   factory HomeNextAssessmentModel.fromJson(Map<String, dynamic> json) {
     return HomeNextAssessmentModel(
-      assessmentId: json['assessmentId']?.toString() ?? '',
+      assessmentId: json['assessmentId']?.toString() ??
+          json['_id']?.toString() ??
+          json['id']?.toString() ??
+          json['assessment_id']?.toString() ??
+          '',
       type: json['type']?.toString() ?? '',
       category: json['category']?.toString() ?? '',
       cycleNumber: (json['cycleNumber'] as num?)?.toInt() ?? 1,
-      scheduledAt: json['scheduledAt']?.toString() ?? '',
-      isDue: json['isDue'] as bool? ?? false,
+      scheduledAt: json['scheduledAt']?.toString() ??
+          json['scheduled_at']?.toString() ??
+          '',
+      isDue: json['isDue'] as bool? ?? json['is_due'] as bool? ?? false,
     );
   }
 }

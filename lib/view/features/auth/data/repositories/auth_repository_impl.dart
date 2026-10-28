@@ -66,6 +66,12 @@ class AuthRepositoryImpl implements AuthRepository {
           final firstName = profileData['firstName']?.toString() ?? '';
           final lastName = profileData['lastName']?.toString() ?? '';
           final fullName = '$firstName $lastName'.trim();
+          if (firstName.isNotEmpty) {
+            await PrefsHelper.setString('firstName', firstName);
+          }
+          if (lastName.isNotEmpty) {
+            await PrefsHelper.setString('lastName', lastName);
+          }
           if (fullName.isNotEmpty) {
             await PrefsHelper.setString('name', fullName);
           }

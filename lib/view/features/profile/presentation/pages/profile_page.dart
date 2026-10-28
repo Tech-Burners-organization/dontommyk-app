@@ -124,6 +124,17 @@ class _ProfilePageView extends StatelessWidget {
                           ),
                           _buildMenuTile(
                             context,
+                            Icons.help_outline,
+                            'What is Align360™?',
+                            onTap: () {
+                              Navigator.pushNamed(
+                                context,
+                                AppRoute.whatIsAlign360,
+                              );
+                            },
+                          ),
+                          _buildMenuTile(
+                            context,
                             Icons.shield_outlined,
                             'Privacy policy',
                             onTap: () {

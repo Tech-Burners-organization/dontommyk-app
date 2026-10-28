@@ -10,10 +10,14 @@ abstract class AssessmentRepository {
     required String benchmarkId,
     required List<AssessmentAnswer> answers,
   });
-  Future<Result<AiAssessmentResponse>> getAiAssessment(String assessmentId);
+  Future<Result<AiAssessmentResponse>> getAiAssessment(
+    String assessmentId, {
+    bool isWeekly = false,
+  });
   Future<Result<String>> submitAiAssessment({
     required String assessmentId,
     required List<AssessmentAnswer> answers,
+    bool isWeekly = false,
   });
   Future<Result<List<AssessmentHistoryItemModel>>> getAssessmentHistory();
   Future<Result<AssessmentDetailModel>> getAssessmentDetail(String assessmentId);

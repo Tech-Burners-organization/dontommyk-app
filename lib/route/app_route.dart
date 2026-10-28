@@ -81,6 +81,7 @@ abstract final class AppRoute {
   static const String privacyPolicy = '/profile/privacy-policy';
   static const String termsAndConditions = '/profile/terms-and-conditions';
   static const String aboutUs = '/profile/about-us';
+  static const String whatIsAlign360 = '/profile/what-is-align360';
 
   /// Determines the next route based on onboarding flags:
   /// - Both true -> [home]
@@ -206,14 +207,28 @@ abstract final class AppRoute {
       aiAssessment => MaterialPageRoute<bool>(
         settings: settings,
         builder: (context) {
-          final assessmentId = settings.arguments as String? ?? '';
+          String assessmentId = '';
+          bool isWeekly = false;
+          if (settings.arguments is String) {
+            assessmentId = settings.arguments as String;
+          } else if (settings.arguments is Map) {
+            final map = settings.arguments as Map;
+            assessmentId = map['id']?.toString() ??
+                map['assessmentId']?.toString() ??
+                '';
+            isWeekly = map['isWeekly'] as bool? ?? false;
+          }
+
           final repo = context.read<AssessmentRepository>();
           return BlocProvider(
             create: (_) => AiAssessmentCubit(
               getAiAssessmentUseCase: GetAiAssessmentUseCase(repo),
               submitAiAssessmentUseCase: SubmitAiAssessmentUseCase(repo),
-            )..loadAiAssessment(assessmentId),
-            child: AiAssessmentPage(assessmentId: assessmentId),
+            )..loadAiAssessment(assessmentId, isWeekly: isWeekly),
+            child: AiAssessmentPage(
+              assessmentId: assessmentId,
+              isWeekly: isWeekly,
+            ),
           );
         },
       ),
@@ -345,6 +360,21 @@ abstract final class AppRoute {
             child: const StaticContentPage(
               title: 'About Us',
               slug: 'about-us',
+            ),
+          );
+        },
+      ),
+      whatIsAlign360 => MaterialPageRoute<void>(
+        settings: settings,
+        builder: (context) {
+          final repo = context.read<ProfileRepository>();
+          return BlocProvider(
+            create: (_) => LegalContentCubit(
+              getLegalContentUseCase: GetLegalContentUseCase(repo),
+            )..fetchContent('what-is-align360'),
+            child: const StaticContentPage(
+              title: 'What is Align360™?',
+              slug: 'what-is-align360',
             ),
           );
         },
